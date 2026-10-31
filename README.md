@@ -1,4 +1,4 @@
-# LØFT – styrketræning for begyndere
+# LIFT – styrketræning for begyndere
 
 Mobil web-app (PWA) med færdige 4-ugers programmer, pausetimer, automatisk vægtlog og grafer over fremgang.
 

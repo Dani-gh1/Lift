@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0d0c">
-<meta name="description" content="LØFT – styrketræning for begyndere. 4-ugers programmer, pausetimer og automatisk vægtlog.">
+<meta name="description" content="LIFT – styrketræning for begyndere. 4-ugers programmer, pausetimer og automatisk vægtlog.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="LØFT">
+<meta name="apple-mobile-web-app-title" content="LIFT">
 <script>
 (function(){ // På computer: vis appen i en telefon-ramme
   var standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
@@ -20,7 +20,7 @@
   if(desktop && !standalone && !framed && location.protocol.indexOf('http')===0 && !/[?&]app/.test(location.search)) location.replace('desktop.html');
 })();
 </script>
-<title>LØFT – styrketræning for begyndere</title>
+<title>LIFT – styrketræning for begyndere</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -185,7 +185,7 @@ const PROGRAMS = [
 const WEEKS = 4, PER_WEEK = 3, TOTAL = WEEKS*PER_WEEK;
 
 /* ============================== STATE & STORAGE ============================== */
-const LS_KEY = 'loft_v1';
+const LS_KEY = 'lift_v1';
 const blank = () => ({profile:{premium:null, activeProgram:'hjem', progress:{}, equipment:Object.keys(EQ), goal:'generel', sound:true, onboarded:false}, logs:[], current:null});
 let S = blank();
 let auth = {mode:'loading', name:'', uid:null};   // mode: loading | cloud | local
@@ -371,7 +371,7 @@ function render(){
   nav.innerHTML = [['home','Hjem'],['programs','Programmer'],['progress','Fremgang'],['profile','Profil']]
     .map(([k,l]) => `<button class="${view===k?'on':''}" onclick="go('${k}')">${ICONS[k]}${l}</button>`).join('');
   const app = $('#app');
-  if(auth.mode === 'loading' && !S.profile.onboarded){ app.innerHTML = `<div class="wrap" style="text-align:center;padding-top:30vh"><div class="logo">L<span>Ø</span>FT</div><p class="mut">Logger ind…</p></div>`; return }
+  if(auth.mode === 'loading' && !S.profile.onboarded){ app.innerHTML = `<div class="wrap" style="text-align:center;padding-top:30vh"><div class="logo">L<span>I</span>FT</div><p class="mut">Logger ind…</p></div>`; return }
   if(!S.profile.onboarded) return renderOnboarding(app);
   ({home:renderHome, programs:renderPrograms, progress:renderProgress, profile:renderProfile, workout:renderWorkout})[view](app);
   renderRestBar();
@@ -389,10 +389,10 @@ let ob = {step:0, loc:'Hjemme'};
 function renderOnboarding(app){
   const login = auth.mode === 'cloud'
     ? `<div class="card row"><span class="dot ok"></span><div><b>Logget ind${auth.name ? ' som ' + esc(auth.name) : ''}</b><div class="small mut">Dine træninger gemmes på din konto og følger dig på alle enheder.</div></div></div>`
-    : !inHost ? `<div class="card row"><span class="dot ok"></span><div><b>Dine data gemmes på denne telefon</b><div class="small mut">Ingen konto nødvendig. Tip: Gem LØFT på din hjemmeskærm, så den åbner som en rigtig app.</div></div></div>`
+    : !inHost ? `<div class="card row"><span class="dot ok"></span><div><b>Dine data gemmes på denne telefon</b><div class="small mut">Ingen konto nødvendig. Tip: Gem LIFT på din hjemmeskærm, så den åbner som en rigtig app.</div></div></div>`
     : `<div class="card row"><span class="dot warn"></span><div><b>Ikke logget ind</b><div class="small mut">Log ind på claude.ai og åbn appen igen for at gemme i skyen. Indtil da gemmes data kun på denne enhed.</div></div></div>`;
   app.innerHTML = `<div class="wrap" style="padding-top:40px">
-    <div class="logo" style="font-size:54px">L<span>Ø</span>FT</div>
+    <div class="logo" style="font-size:54px">L<span>I</span>FT</div>
     <h2 style="margin-top:6px">Styrketræning for begyndere</h2>
     <p class="mut">Færdige 4-ugers programmer, 3 dage om ugen. Appen husker dine vægte og fortæller dig, hvornår du skal løfte tungere.</p>
     ${login}
@@ -416,7 +416,7 @@ function renderHome(app){
   const streak = weekStreak();
   const last = S.logs[S.logs.length-1];
   app.innerHTML = `<div class="wrap">
-    <div class="top"><div class="logo">L<span>Ø</span>FT</div>${acctChip()}</div>
+    <div class="top"><div class="logo">L<span>I</span>FT</div>${acctChip()}</div>
     ${S.current ? `<div class="card" style="border-color:var(--neon)"><h3>Træning i gang</h3><p class="mut small">${esc(prog(S.current.p).name)} · ${esc(prog(S.current.p).days[S.current.idx%3].n)}</p><button class="btn pri block" onclick="go('workout')">Fortsæt træning</button></div>` : ''}
     <div class="card">
       <div class="row between"><span class="pill">${esc(p.loc)}</span><span class="small mut">Uge ${Math.min(week,WEEKS)} af ${WEEKS}</span></div>
@@ -435,7 +435,7 @@ function renderHome(app){
       <div class="stat"><span class="small mut">Træninger i alt</span><b>${S.logs.length}</b></div>
       <div class="stat"><span class="small mut">Sidste træning</span><b style="font-size:18px">${last ? dk(last.d) : '–'}</b></div>
     </div>
-    ${!isPremium() ? `<div class="card" style="background:linear-gradient(135deg,#132219,#171c19)"><h3>Prøv <span class="neon">LØFT Premium</span></h3><p class="small mut">Alle programmer, tilpasning til dit udstyr og mål, statistik og eksport.</p><button class="btn block" onclick="openPaywall()">Se Premium – fra 29 kr./md.</button></div>` : ''}
+    ${!isPremium() ? `<div class="card" style="background:linear-gradient(135deg,#132219,#171c19)"><h3>Prøv <span class="neon">LIFT Premium</span></h3><p class="small mut">Alle programmer, tilpasning til dit udstyr og mål, statistik og eksport.</p><button class="btn block" onclick="openPaywall()">Se Premium – fra 29 kr./md.</button></div>` : ''}
   </div>`;
 }
 function weekStreak(){
@@ -664,7 +664,7 @@ function exportData(kind){
     S.logs.forEach(l=>l.ex.forEach(e=>e.sets.forEach((s,i)=>rows.push([l.d.slice(0,10), prog(l.p)?.name||l.p, (l.idx%3)+1, EX[e.id].n, i+1, s.w, s.r]))));
     txt = rows.map(r=>r.map(c=>/[;,"\n]/.test(String(c)) ? '"'+String(c).replace(/"/g,'""')+'"' : c).join(';')).join('\n') }
   else txt = JSON.stringify({profile:S.profile, logs:S.logs}, null, 1);
-  const fname = 'loft-' + new Date().toISOString().slice(0,10) + '.' + kind;
+  const fname = 'lift-' + new Date().toISOString().slice(0,10) + '.' + kind;
   modal(`<div class="row between"><h2 style="margin:0">Eksport (${kind.toUpperCase()})</h2><button class="btn sm ghost" onclick="closeModal()">Luk</button></div>
     <p class="small mut">Gem som fil eller kopiér og indsæt i fx Excel/Google Sheets.</p>
     <textarea id="exp" readonly>${esc(txt)}</textarea>
@@ -713,7 +713,7 @@ function renderProfile(app){
         : auth.mode==='loading' ? `<p class="mut">Logger ind…</p>`
         : !inHost ? `<div class="row"><span class="dot ok"></span><div><b>Gemt på denne enhed</b><div class="small mut">Dine træninger gemmes automatisk i appen på denne telefon. Brug Premium-eksport (JSON) som backup.</div></div></div>
           ${isStandalone() ? '' : `<button class="btn block" style="margin-top:12px" onclick="showInstall(true)">📲 Gem på hjemmeskærm</button>`}`
-        : `<div class="row"><span class="dot warn"></span><div><b>Ikke logget ind</b><div class="small mut">Dine data gemmes kun i denne browser. Log ind på <b>claude.ai</b> og åbn LØFT derfra, så gemmes alt på din konto. Dine lokale træninger flyttes automatisk med ved første login.</div></div></div>`}
+        : `<div class="row"><span class="dot warn"></span><div><b>Ikke logget ind</b><div class="small mut">Dine data gemmes kun i denne browser. Log ind på <b>claude.ai</b> og åbn LIFT derfra, så gemmes alt på din konto. Dine lokale træninger flyttes automatisk med ved første login.</div></div></div>`}
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0">Abonnement</h3>${pr ? '<span class="pill">Premium</span>' : '<span class="pill lock">Gratis</span>'}</div>
@@ -731,7 +731,7 @@ function renderProfile(app){
       <button class="btn block" style="margin-top:10px" onclick="loadDemo()">Indlæs eksempeldata</button>
       <button class="btn block" style="margin-top:10px;border-color:var(--bad);color:var(--bad)" onclick="askReset()">Slet alle mine data</button>
     </div>
-    <p class="small mut" style="text-align:center">LØFT · Animationerne er illustrationer – tal med en fagperson ved skader eller smerter.</p>
+    <p class="small mut" style="text-align:center">LIFT · Animationerne er illustrationer – tal med en fagperson ved skader eller smerter.</p>
   </div>`;
 }
 function toggleEq(k){ const e = S.profile.equipment; S.profile.equipment = e.includes(k) ? e.filter(x=>x!==k) : [...e,k]; save(); render() }
@@ -758,7 +758,7 @@ function loadDemo(){
 /* ---------- Premium / paywall ---------- */
 let plan = 'year';
 function openPaywall(reason){
-  modal(`<div class="row between"><span class="pill">LØFT Premium</span><button class="btn sm ghost" onclick="closeModal()">Luk</button></div>
+  modal(`<div class="row between"><span class="pill">LIFT Premium</span><button class="btn sm ghost" onclick="closeModal()">Luk</button></div>
     <h2 style="margin-top:12px">${reason ? esc(reason)+' kræver Premium' : 'Få mere ud af din træning'}</h2>
     <ul class="feat"><li>Alle ${PROGRAMS.length} programmer – hjemme og i fitnesscenter</li><li>Tilpasning til dit udstyr og dit mål</li><li>Statistik: volumen, rekorder og est. 1RM</li><li>Eksport af alle data (CSV/JSON)</li></ul>
     <div class="plan ${plan==='year'?'on':''}" onclick="plan='year';openPaywall(${reason?`'${esc(reason)}'`:''})"><span class="tag">Spar 40 %</span><div class="row between"><div><b>Årligt</b><div class="small mut">Svarer til 29 kr./md.</div></div><div class="price">349 kr.<span class="small mut">/år</span></div></div></div>
@@ -777,20 +777,20 @@ let deferredPrompt = null;
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; showInstall() });
-window.addEventListener('appinstalled', () => { $('#installBox')?.remove(); toast('LØFT er gemt på hjemmeskærmen 🎉') });
+window.addEventListener('appinstalled', () => { $('#installBox')?.remove(); toast('LIFT er gemt på hjemmeskærmen 🎉') });
 function showInstall(force){
   if(isStandalone() || inHost || window.top !== window.self) return;
-  try{ if(!force && localStorage.getItem('loft_noinstall')) return }catch(e){}
+  try{ if(!force && localStorage.getItem('lift_noinstall')) return }catch(e){}
   $('#installBox')?.remove();
   const d = document.createElement('div'); d.id = 'installBox'; d.className = 'install';
   const ios = isIOS();
-  d.innerHTML = `<div class="row between"><b>📲 Gem LØFT på hjemmeskærmen</b><button class="btn sm ghost" style="min-height:36px" onclick="dismissInstall()">✕</button></div>
-    ${deferredPrompt ? `<p class="small mut" style="margin:6px 0 10px">Åbn LØFT som en app – fuld skærm og hurtig adgang.</p><button class="btn pri block" onclick="doInstall()">Installér app</button>`
+  d.innerHTML = `<div class="row between"><b>📲 Gem LIFT på hjemmeskærmen</b><button class="btn sm ghost" style="min-height:36px" onclick="dismissInstall()">✕</button></div>
+    ${deferredPrompt ? `<p class="small mut" style="margin:6px 0 10px">Åbn LIFT som en app – fuld skærm og hurtig adgang.</p><button class="btn pri block" onclick="doInstall()">Installér app</button>`
       : ios ? `<p class="small" style="margin:8px 0 0">1. Tryk på <b>Del</b>-ikonet <span class="neon">⬆︎</span> i Safari<br>2. Vælg <b>Føj til hjemmeskærm</b><br>3. Tryk <b>Tilføj</b></p>`
       : `<p class="small" style="margin:8px 0 0">Åbn browserens menu <b>⋮</b> og vælg <b>Føj til startskærm</b> / <b>Installér app</b>.</p>`}`;
   document.body.appendChild(d);
 }
-function dismissInstall(){ try{ localStorage.setItem('loft_noinstall','1') }catch(e){} $('#installBox')?.remove() }
+function dismissInstall(){ try{ localStorage.setItem('lift_noinstall','1') }catch(e){} $('#installBox')?.remove() }
 async function doInstall(){ if(!deferredPrompt) return; deferredPrompt.prompt(); try{ await deferredPrompt.userChoice }catch(e){} deferredPrompt = null; $('#installBox')?.remove() }
 if('serviceWorker' in navigator && location.protocol==='https:' && !inHost) navigator.serviceWorker.register('sw.js').catch(()=>{});
 setTimeout(() => { if(S.profile.onboarded && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) showInstall() }, 2500);
