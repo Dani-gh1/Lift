@@ -1,0 +1,3 @@
+# Stripe kalder webhooken uden Supabase-login – den beskyttes i stedet af Stripes signatur.
+[functions.stripe-webhook]
+verify_jwt = false

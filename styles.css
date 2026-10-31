@@ -25,6 +25,9 @@ p{margin:6px 0}
 .hdr h1{flex:1;min-width:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr .back{flex:none}
 .logo{font-family:"Archivo Black";font-size:28px;letter-spacing:1px;line-height:1}
+.logo{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.logo .lb{width:52px;height:20px;filter:drop-shadow(0 0 6px rgba(57,255,122,.5))}
+.logo.big{font-size:56px}.logo.big .lb{width:120px;height:46px}
 .logo i{font-style:normal;color:var(--neon);text-shadow:0 0 16px rgba(57,255,122,.55)}
 .chip-save{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--bg2);color:var(--txt);font:600 13px Inter;cursor:pointer}
 .chip-save .ic{color:var(--neon);width:16px;height:16px}

@@ -90,7 +90,9 @@ function trackOnce(name){ if(S.profile.flags[name]) return; S.profile.flags[name
 /* ============================== HJÆLPERE ============================== */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const isPremium = () => !!S.profile.premium;
+// Premium er enten 'test' (testknap) eller {source:'stripe', plan, until}. Virker offline i 3 dage efter udløbsdato.
+const isPremium = () => { const p = S.profile.premium; if(!p) return false; if(p.until && new Date(p.until).getTime() + 3*864e5 < Date.now()) return false; return true };
+const testTools = () => { try{ if(/[?&]test\b/.test(location.search)) localStorage.setItem('lift_test','1'); return CONFIG.showTestTools || localStorage.getItem('lift_test')==='1' }catch(e){ return CONFIG.showTestTools } };
 const prog = id => PROGRAMS.find(p => p.id === id);
 const fmt = w => (Math.round(w*10)/10).toString();
 const unit = x => x.t==='w' ? 'kg' : x.t==='s' ? 'sec' : 'reps';
@@ -135,14 +137,14 @@ function planFor(p, idx){
   });
   return {week, wk, day, ex};
 }
-function history(id){
+function exHistory(id){ // (ikke "history" – det navn bruger browseren)
   const out = [];
   for(const l of S.logs) for(const e of l.ex) if(e.id === id && e.sets.length) out.push({d:l.d, target:e.target, sets:e.sets, log:l.id});
   return out.sort((a,b)=> a.d < b.d ? -1 : 1);
 }
 const bestOf = (x, sets) => x.t==='w' ? Math.max(...sets.map(s=>s.w)) : Math.max(...sets.map(s=>s.r));
 function lastText(id){
-  const h = history(id), x = EX[id];
+  const h = exHistory(id), x = EX[id];
   if(!h.length) return '';
   const l = h[h.length-1];
   if(x.t === 'w'){ const top = l.sets.reduce((a,s)=> s.w>a.w || (s.w===a.w && s.r>a.r) ? s : a, l.sets[0]); return `Last time: ${fmt(top.w)} kg × ${top.r}` }
@@ -150,7 +152,7 @@ function lastText(id){
 }
 // Forslag til denne træning ud fra sidste gang
 function suggest(id, target){
-  const x = EX[id], h = history(id);
+  const x = EX[id], h = exHistory(id);
   if(!h.length) return {w: x.t==='w' ? x.start : 0, r: target, cls:'keep',
     note: x.t==='w' ? `First time: start with about ${fmt(x.start)} kg. The last 2 reps should be hard – but clean.` : `Goal: ${target} ${unit(x)} in every set.`};
   const last = h[h.length-1];
@@ -184,34 +186,78 @@ function weekDaysHTML(){
   return `<div class="days7" aria-label="Training days this week">${['M','T','W','T','F','S','S'].map((d,i)=>`<div>${d}<i class="${doneDays.has(i)?'d':i===today?'t':''}">${doneDays.has(i)?ic('check'):''}</i></div>`).join('')}</div>`;
 }
 
-/* ============================== DEMO-ANIMATIONER ============================== */
+/* ============================== DEMO-ANIMATIONER ==============================
+   Hver stilling (pose) har to positioner: A (start) og B (bunden af bevægelsen).
+   Leddene: h=hoved, n=nakke, hp=hofte, k/f=knæ/fod, el/hd=albue/hånd, k2/f2 = det fjerne ben. */
 const P = (h,n,hp,k,f,el,hd,k2,f2) => ({h,n,hp,k,f,el,hd,k2:k2||k,f2:f2||f});
 const STAND = P([60,20],[60,32],[60,64],[60,87],[60,110],[64,48],[68,62]);
 const POSES = {
   squat:[P([60,20],[60,32],[60,64],[61,87],[60,110],[70,44],[82,40]), P([74,44],[68,56],[40,80],[70,84],[60,110],[80,62],[92,60])],
   push:[P([22,62],[32,68],[74,82],[92,95],[110,106],[32,89],[32,110]), P([22,90],[34,96],[74,100],[92,104],[110,106],[50,96],[32,110])],
+  bench:[P([16,70],[28,72],[70,74],[92,76],[96,110],[29,56],[29,38]), P([16,70],[28,72],[70,74],[92,76],[96,110],[44,80],[31,62])],
   hinge:[P([60,20],[60,32],[60,64],[60,87],[60,110],[61,48],[62,64]), P([92,44],[84,50],[52,62],[56,86],[60,110],[84,66],[84,82])],
   press:[P([60,20],[60,32],[60,64],[60,87],[60,110],[74,40],[70,28]), P([60,20],[60,32],[60,64],[60,87],[60,110],[66,14],[62,0])],
   row:[P([92,46],[84,52],[52,62],[56,86],[60,110],[84,70],[84,86]), P([92,46],[84,52],[52,62],[56,86],[60,110],[64,48],[74,64])],
+  invrow:[P([20,100],[31,99],[72,103],[92,106],[112,108],[33,80],[34,60]), P([22,74],[33,74],[72,88],[92,99],[112,108],[52,72],[34,60])],
   bridge:[P([14,100],[25,101],[62,104],[86,84],[94,110],[38,108],[52,110]), P([14,100],[25,99],[62,82],[86,82],[94,110],[38,108],[52,110])],
   lunge:[STAND, P([62,40],[62,52],[60,82],[82,86],[82,110],[64,66],[68,80],[50,106],[30,108])],
   plank:[P([20,86],[30,90],[72,94],[92,100],[110,106],[30,110],[44,110]), P([20,84],[30,88],[72,90],[92,99],[110,106],[30,110],[44,110])],
-  pull:[P([60,30],[60,42],[60,74],[62,96],[60,116],[64,22],[62,4]), P([60,14],[60,26],[60,58],[62,80],[60,102],[76,26],[66,4])],
+  pull:[P([60,30],[60,42],[60,74],[62,96],[60,112],[64,22],[62,4]), P([60,30],[60,42],[60,74],[62,96],[60,112],[76,50],[70,32])],
+  pike:[P([34,76],[44,72],[72,44],[86,76],[100,110],[40,92],[36,110]), P([36,100],[46,93],[74,50],[88,78],[100,110],[58,100],[36,110])],
+  chestpress:[P([60,20],[60,32],[60,64],[60,87],[60,110],[48,50],[64,46]), P([60,20],[60,32],[60,64],[60,87],[60,110],[76,46],[94,46])],
   swing:[P([92,44],[84,50],[52,62],[58,86],[60,110],[66,74],[60,92]), P([60,20],[60,32],[60,64],[60,87],[60,110],[78,42],[96,36])],
 };
-function demoSVG(anim){
-  const [A,B] = POSES[anim] || [STAND,STAND];
-  const dur = anim==='plank' ? '3s' : '2.4s';
-  const an = (attr,a,b) => `<animate attributeName="${attr}" values="${a};${b};${a}" dur="${dur}" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>`;
-  const bone = (p,q,w,c) => `<line stroke="${c||'#39ff7a'}" stroke-width="${w}" stroke-linecap="round" x1="${A[p][0]}" y1="${A[p][1]}" x2="${A[q][0]}" y2="${A[q][1]}">${an('x1',A[p][0],B[p][0])}${an('y1',A[p][1],B[p][1])}${an('x2',A[q][0],B[q][0])}${an('y2',A[q][1],B[q][1])}</line>`;
-  const weight = ['squat','press','row','hinge','swing'].includes(anim) ? `<circle r="5" fill="#f1f5f3" cx="${A.hd[0]}" cy="${A.hd[1]}">${an('cx',A.hd[0],B.hd[0])}${an('cy',A.hd[1],B.hd[1])}</circle>` : '';
-  return `<svg viewBox="-5 -8 130 128" role="img" aria-label="Exercise animation">
-    <line x1="-5" y1="111" x2="125" y2="111" stroke="#2a342f" stroke-width="2"/>
-    ${bone('hp','k2',6,'#1a7a3e')}${bone('k2','f2',6,'#1a7a3e')}
-    ${bone('n','hp',7)}${bone('hp','k',6)}${bone('k','f',6)}${bone('n','el',5)}${bone('el','hd',5)}
-    <circle r="8" fill="#0e1310" stroke="#39ff7a" stroke-width="4" cx="${A.h[0]}" cy="${A.h[1]}">${an('cx',A.h[0],B.h[0])}${an('cy',A.h[1],B.h[1])}</circle>
-    ${weight}</svg>`;
+// Hvilket udstyr der tegnes. Kan overskrives med vis:'...' på øvelsen i data.js
+function visOf(id){
+  const x = EX[id]; if(x.vis) return x.vis;
+  if(id==='table_row') return 'table';
+  if(x.needs.includes('stang')) return 'barbell';
+  if(x.needs.includes('haandvaegte')) return 'dumbbell';
+  if(x.needs.includes('kettlebell')) return 'kb';
+  if(x.needs.includes('elastik')) return 'band';
+  if(x.needs.includes('maskiner')) return x.a==='pull' ? 'cable' : 'sled';
+  return '';
 }
+function demoSVG(id){
+  const x = EX[id], anim = x.a, vis = visOf(id);
+  const [A,B] = POSES[anim] || [STAND,STAND];
+  const dur = anim==='plank' ? '3s' : '2.6s', ks = 'calcMode="spline" keyTimes="0;.55;1" keySplines=".45 0 .55 1;.45 0 .55 1"';
+  const an = (attr,a,b) => `<animate attributeName="${attr}" values="${a};${b};${a}" dur="${dur}" repeatCount="indefinite" ${ks}/>`;
+  const mv = (pt) => `<animateTransform attributeName="transform" type="translate" values="${A[pt]};${B[pt]};${A[pt]}" dur="${dur}" repeatCount="indefinite" ${ks}/>`;
+  const bone = (p,q,w,c) => `<line stroke="${c}" stroke-width="${w}" stroke-linecap="round" x1="${A[p][0]}" y1="${A[p][1]}" x2="${A[q][0]}" y2="${A[q][1]}">${an('x1',A[p][0],B[p][0])}${an('y1',A[p][1],B[p][1])}${an('x2',A[q][0],B[q][0])}${an('y2',A[q][1],B[q][1])}</line>`;
+  const N = '#39ff7a', F = '#1d7d42';
+  // Udstyr der følger hånden
+  const atHand = {
+    barbell: `<circle r="11" fill="#0e1310" stroke="#f1f5f3" stroke-width="3"/><circle r="2.5" fill="#f1f5f3"/>`,
+    dumbbell: `<rect x="-9" y="-4" width="18" height="8" rx="3" fill="#f1f5f3"/><rect x="-11" y="-6" width="5" height="12" rx="2" fill="#f1f5f3"/><rect x="6" y="-6" width="5" height="12" rx="2" fill="#f1f5f3"/>`,
+    kb: `<circle cy="8" r="8" fill="#f1f5f3"/><path d="M-5 2 a5 5 0 0 1 10 0" fill="none" stroke="#f1f5f3" stroke-width="3"/>`,
+  }[vis];
+  const handProp = atHand ? `<g transform="translate(${A.hd})">${mv('hd')}${atHand}</g>` : '';
+  // Faste ting i rummet
+  let scene = '';
+  if(anim==='bench') scene = `<rect x="6" y="80" width="92" height="7" rx="3" fill="#2a342f"/><rect x="18" y="87" width="5" height="23" fill="#2a342f"/><rect x="82" y="87" width="5" height="23" fill="#2a342f"/>`;
+  if(vis==='table') scene = `<rect x="-4" y="54" width="70" height="6" rx="2" fill="#2a342f"/><rect x="0" y="60" width="5" height="50" fill="#2a342f"/><rect x="58" y="60" width="5" height="50" fill="#2a342f"/>`;
+  if(vis==='cable') scene = `<circle cx="62" cy="-2" r="5" fill="none" stroke="#a9b6af" stroke-width="2"/><line x1="62" y1="-2" x2="${A.hd[0]}" y2="${A.hd[1]}" stroke="#a9b6af" stroke-width="2">${an('x2',A.hd[0],B.hd[0])}${an('y2',A.hd[1],B.hd[1])}</line><rect x="40" y="${A.hd[1]-2}" width="44" height="4" rx="2" fill="#f1f5f3">${an('y',A.hd[1]-2,B.hd[1]-2)}</rect>`;
+  if(vis==='band'){ const ax = anim==='row' ? 124 : -2, ay = anim==='row' ? 70 : 50;
+    scene = `<rect x="${ax-3}" y="${ay-10}" width="6" height="20" rx="2" fill="#2a342f"/><line x1="${ax}" y1="${ay}" x2="${A.hd[0]}" y2="${A.hd[1]}" stroke="#ffcc33" stroke-width="3" stroke-dasharray="5 3">${an('x2',A.hd[0],B.hd[0])}${an('y2',A.hd[1],B.hd[1])}</line>` }
+  if(vis==='sled') scene = `<rect x="84" y="20" width="8" height="70" rx="3" fill="#2a342f" transform="rotate(-20 88 55)"/>`;
+  // Pil der viser retningen (op/ned eller frem/tilbage)
+  const dxh = B.hd[0]-A.hd[0], dyh = B.hd[1]-A.hd[1];
+  const vert = Math.abs(dyh) || Math.abs(dxh) ? Math.abs(dyh) >= Math.abs(dxh) : Math.abs(B.hp[1]-A.hp[1]) >= Math.abs(B.hp[0]-A.hp[0]);
+  const arrow = anim==='plank' ? '' : `<g opacity=".0" stroke="${N}" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      ${vert ? `<path d="M116 30v40M110 36l6-6 6 6M110 64l6 6 6-6"/>` : `<path d="M30 -2h50M36 -8l-6 6 6 6M74 -8l6 6-6 6"/>`}
+      <animate attributeName="opacity" values="0;.85;0" dur="${dur}" repeatCount="indefinite"/></g>`;
+  return `<svg viewBox="-8 -12 136 134" role="img" aria-label="Animation of ${esc(x.n)}">
+    <ellipse cx="60" cy="112" rx="56" ry="4" fill="#000" opacity=".45"/>
+    <line x1="-8" y1="111" x2="128" y2="111" stroke="#2a342f" stroke-width="2"/>
+    ${scene}${arrow}
+    ${bone('hp','k2',6,F)}${bone('k2','f2',6,F)}
+    <g transform="translate(4 -1)">${bone('n','el',5,F)}${bone('el','hd',5,F)}</g>
+    ${bone('n','hp',8,N)}${bone('hp','k',7,N)}${bone('k','f',7,N)}${bone('n','el',5.5,N)}${bone('el','hd',5.5,N)}
+    <circle r="8.5" fill="#0e1310" stroke="${N}" stroke-width="4" cx="${A.h[0]}" cy="${A.h[1]}">${an('cx',A.h[0],B.h[0])}${an('cy',A.h[1],B.h[1])}</circle>
+    ${handProp}</svg>`;
+}
+const tempoText = id => EX[id].t==='s' ? 'Hold still and breathe calmly.' : EX[id].a==='swing' ? 'Explode up with your hips, let the bell fall back.' : 'Lower slowly (2 sec) · push up strong (1 sec).';
 
 /* ============================== NAVIGATION ============================== */
 let view = 'home';
@@ -226,6 +272,8 @@ function render(){
   ({home:renderHome, programs:renderPrograms, progress:renderProgress, profile:renderProfile, workout:renderWorkout, done:renderDone, premium:renderPremium})[view](app);
   renderRestBar();
 }
+const BARBELL = '<svg class="lb" viewBox="60 140 392 148" aria-hidden="true"><g fill="#39ff7a"><rect x="70" y="203" width="372" height="22" rx="11"/><rect x="112" y="150" width="40" height="128" rx="12"/><rect x="162" y="172" width="30" height="84" rx="10"/><rect x="360" y="150" width="40" height="128" rx="12"/><rect x="320" y="172" width="30" height="84" rx="10"/><rect x="76" y="186" width="26" height="56" rx="8"/><rect x="410" y="186" width="26" height="56" rx="8"/></g></svg>';
+const logoHTML = (big) => `<div class="logo grow ${big?'big':''}" aria-label="LIFT">${BARBELL}<span>L<i>I</i>FT</span></div>`;
 const saveChip = () => `<button class="chip-save" onclick="go('profile')" aria-label="Data saved on this device">${ic('shield')}Saved</button>`;
 const header = (title, right='') => `<header class="hdr">${title}${right}</header>`;
 
@@ -239,7 +287,7 @@ function renderOnboarding(app){
   const back = ob.step > 0 ? `<button class="iconbtn back" onclick="ob.step--;render()" aria-label="Back">${ic('chevL')}</button>` : '';
   let body = '';
   if(ob.step === 0) body = `
-    <div class="logo" style="font-size:52px;margin-top:20px">L<i>I</i>FT</div>
+    <div style="margin-top:20px">${logoHTML(true)}</div>
     <h1 style="margin-top:14px">Strength training for beginners</h1>
     <p class="mut">Get a ready-made program and know exactly what to do every time. Answer 4 quick questions and we'll find your program.</p>
     <div style="flex:1"></div>
@@ -309,7 +357,7 @@ function renderHome(app){
   const pl = planFor(p, Math.min(idx, total()-1));
   const first = !S.logs.length;
   app.innerHTML = `<div class="wrap">
-    ${header(`<div class="logo grow">L<i>I</i>FT</div>`, saveChip())}
+    ${header(logoHTML(), saveChip())}
     ${S.current ? `<div class="card" style="border-color:var(--neon)"><div class="banner"><span class="bi">${ic('pause')}</span><div class="grow"><h3 style="margin:0">Workout paused</h3><p class="small mut">${esc(prog(S.current.p)?.name)} · ${esc(S.current.dayName||'')} – your sets are saved.</p></div></div><button class="btn pri block" style="margin-top:10px" onclick="go('workout')">${ic('play')} Continue workout</button></div>` : ''}
     ${backupDue() ? `<div class="card"><div class="banner"><span class="bi">${ic('shield')}</span><div class="grow"><b>Back up your workouts</b><p class="small mut">Your data is only stored on this phone. ${S.profile.lastBackup ? 'Last backup: ' + dk(S.profile.lastBackup) + '.' : 'You have not made a backup yet.'} It takes 5 seconds.</p></div></div>
       <div class="grid2" style="margin-top:10px"><button class="btn sm" onclick="S.profile.backupSnooze=Date.now();save();render()">Later</button><button class="btn sm pri" onclick="exportJSON()">${ic('download','sm')} Save backup</button></div></div>` : ''}
@@ -346,7 +394,7 @@ function programDoneHTML(p){
 }
 function progressCompare(pid){
   const logs = S.logs.filter(l => l.p === pid), ids = [...new Set(logs.flatMap(l=>l.ex.map(e=>e.id)))];
-  const rows = ids.map(id => { const h = history(id).filter(x => logs.some(l=>l.id===x.log)); if(h.length < 2) return '';
+  const rows = ids.map(id => { const h = exHistory(id).filter(x => logs.some(l=>l.id===x.log)); if(h.length < 2) return '';
     const x = EX[id], a = bestOf(x,h[0].sets), b = bestOf(x,h[h.length-1].sets), d = b - a;
     return `<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><span class="small">${esc(x.n)}</span><span class="small"><span class="mut">${fmt(a)} → </span><b>${fmt(b)} ${unit(x)}</b> ${d>0?`<span class="neon">+${fmt(d)}</span>`:''}</span></div>` }).join('');
   return rows ? `<div class="card" style="margin:8px 0">${rows}</div>` : '';
@@ -387,10 +435,11 @@ function setActive(id){
   S.profile.activeProgram = id; save(); toast('Program selected'); go('home');
 }
 function showExercise(id){
-  const x = EX[id], h = history(id);
+  const x = EX[id], h = exHistory(id);
   const best = h.length ? Math.max(...h.map(y=>bestOf(x,y.sets))) : null;
   modal(`<div class="row between"><h2 style="margin:0">${esc(x.n)}</h2><button class="iconbtn" onclick="closeModal()" aria-label="Close">${ic('x')}</button></div>
-    <div class="demo" style="margin-top:12px">${x.video ? `<video src="${esc(x.video)}" autoplay loop muted playsinline></video>` : `<span class="badge">ANIMATION</span>${demoSVG(x.a)}`}</div>
+    <div class="demo" style="margin-top:12px">${x.video ? `<video src="${esc(x.video)}" autoplay loop muted playsinline></video>` : `<span class="badge">ANIMATION</span>${demoSVG(id)}`}</div>
+    <p class="small center neon" style="margin:8px 0 0">${ic('clock','sm')} ${tempoText(id)}</p>
     <h3 style="margin-top:14px">How to do it</h3>
     <ol class="cue">${x.cue.map(c=>`<li>${esc(c)}</li>`).join('')}</ol>
     <div class="grid2"><div class="stat"><span>Equipment</span><b style="font:700 15px Inter;color:var(--txt)">${x.needs.length ? x.needs.map(n=>UDSTYR[n]).join(', ') : 'None'}</b></div>
@@ -485,7 +534,7 @@ function finishWorkout(){
   finishWorkout.ok = false;
   // rekorder: sammenlign med tidligere
   const prs = [];
-  ex.forEach(e => { const x = EX[e.id], h = history(e.id); if(!h.length) return;
+  ex.forEach(e => { const x = EX[e.id], h = exHistory(e.id); if(!h.length) return;
     const prev = Math.max(...h.map(y=>bestOf(x,y.sets))), now = bestOf(x,e.sets);
     if(now > prev) prs.push({n:x.n, v:`${fmt(now)} ${unit(x)}`, d:`before: ${fmt(prev)}`}) });
   const log = {id:newId(), d:new Date().toISOString(), p:c.p, idx:c.idx, min:Math.max(1, Math.round((Date.now()-c.start)/60000)), ex};
@@ -554,7 +603,7 @@ function renderRestBar(){
 let chartEx = null;
 const exercisesLogged = () => [...new Set(S.logs.flatMap(l=>l.ex.map(e=>e.id)))];
 function prList(){
-  return exercisesLogged().map(id => { const x = EX[id], h = history(id), b = Math.max(...h.map(y=>bestOf(x,y.sets)));
+  return exercisesLogged().map(id => { const x = EX[id], h = exHistory(id), b = Math.max(...h.map(y=>bestOf(x,y.sets)));
     let e1 = 0; if(x.t==='w') h.forEach(y=>y.sets.forEach(s=>{ e1 = Math.max(e1, s.w*(1+s.r/30)) }));
     return {id, n:x.n, v:fmt(b)+' '+unit(x), e1: x.t==='w' ? fmt(Math.round(e1*2)/2)+' kg' : ''} });
 }
@@ -575,7 +624,7 @@ function renderProgress(app){
       <button class="btn pri block" onclick="${S.current?"go('workout')":'startWorkout()'}">${ic('play')} ${S.current?'Continue workout':'Start workout'}</button></div></div>`;
     return;
   }
-  const x = EX[chartEx], h = history(chartEx);
+  const x = EX[chartEx], h = exHistory(chartEx);
   const d = h.length >= 2 ? bestOf(x,h[h.length-1].sets) - bestOf(x,h[0].sets) : null;
   app.innerHTML = `<div class="wrap">
     ${header(`<h1>Progress</h1>`, saveChip())}
@@ -728,14 +777,15 @@ function renderProfile(app){
       <h3>Your equipment</h3><p class="small mut">Exercises you don't have equipment for are swapped automatically.</p>
       <div class="chips">${Object.entries(UDSTYR).map(([k,n])=>`<button class="chip ${S.profile.equipment.includes(k)?'on':''}" onclick="toggleEq('${k}')">${n}</button>`).join('')}</div>
     </div>${pr ? '' : `<div class="veil"><span class="pill lock">${ic('lock')} Premium</span><b>Tailor the program to your equipment</b><button class="btn sm pri" onclick="openPremium('equipment')">See Premium</button></div>`}</div>
-    <button class="card prog" onclick="openPremium('profile')"><div class="row between"><div><h3 style="margin:0">Subscription</h3><p class="small mut" style="margin:2px 0 0">${pr ? 'Premium (test mode)' : 'Free: 1 program, basic log and backup'}</p></div>${ic('chevR')}</div></button>
+    <button class="card prog" onclick="openPremium('profile')"><div class="row between"><div><h3 style="margin:0">Subscription</h3><p class="small mut" style="margin:2px 0 0">${!pr ? 'Free: 1 program, basic log and backup' : S.profile.premium.source==='stripe' ? `Premium · ${S.profile.premium.status==='trialing'?'trial until':S.profile.premium.cancel?'ends':'renews'} ${fmtDate(S.profile.premium.until)}` : 'Premium (test mode)'}</p>${payEnabled() ? `<p class="xs mut" style="margin:4px 0 0">${acct.user ? 'Signed in as ' + esc(acct.user.email) : 'Not signed in'}</p>` : ''}</div>${ic('chevR')}</div></button>
     <div class="card"><h3>App</h3>
       <button class="btn block" onclick="S.profile.sound=!S.profile.sound;save();render()">${S.profile.sound?ic('sound')+' Rest timer sound: On':ic('mute')+' Rest timer sound: Off'}</button>
       ${isStandalone() ? '' : `<button class="btn block" style="margin-top:10px" onclick="showInstall(true)">${ic('install')} Add to home screen</button>`}
       <button class="btn block" style="margin-top:10px" onclick="redoOnboarding()">${ic('repeat')} Choose program again</button>
       <button class="btn block danger" style="margin-top:10px" onclick="askReset()">${ic('trash')} Delete all my data</button>
     </div>
-    ${CONFIG.showTestTools ? `<div class="card" style="border-style:dashed"><h3>For testing</h3><p class="xs mut">These buttons are hidden when CONFIG.showTestTools is set to false in data.js.</p>
+    ${payEnabled() && acct.user ? `<button class="btn block" style="margin-top:-2px;margin-bottom:12px" onclick="signOut()">${ic('user')} Sign out</button>` : ''}
+    ${testTools() ? `<div class="card" style="border-style:dashed"><h3>For testing</h3><p class="xs mut">Only visible when the app is opened with ?test in the address (or CONFIG.showTestTools is true).</p>
       <div class="grid2"><button class="btn sm" onclick="S.profile.premium=S.profile.premium?null:'test';save();render()">${pr?'Turn Premium off':'Turn Premium on'}</button><button class="btn sm" onclick="loadDemo()">Sample data</button></div></div>` : ''}
     <div class="warnline">${ic('alert')}<span>LIFT does not give medical advice. Stop if it hurts, and ask a doctor if you're ill or injured.</span></div>
     <p class="xs mut center" style="margin-top:14px">LIFT · version 2</p>
@@ -762,14 +812,106 @@ function loadDemo(){
   save(); toast('Sample data loaded'); go('progress');
 }
 
-/* ============================== PREMIUM (kun mockup) ============================== */
+/* ============================== KONTO & BETALING (Supabase + Stripe) ==============================
+   Slås til ved at udfylde CONFIG.supabaseUrl og CONFIG.supabaseAnonKey i data.js (se SETUP.md).
+   Kontoen bruges KUN til Premium. Træningsdata bliver på telefonen. */
+const payEnabled = () => !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
+let sb = null;
+const acct = {ready:false, user:null, sub:null, step:'email', email:'', busy:false};
+async function initAccount(){
+  if(!payEnabled()) return;
+  try{
+    const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    sb = mod.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false}});
+    const {data} = await sb.auth.getSession();
+    acct.user = data.session?.user || null; acct.ready = true;
+    sb.auth.onAuthStateChange((_e, sess) => { const before = acct.user?.id; acct.user = sess?.user || null; if(acct.user?.id !== before) refreshSub() });
+    await refreshSub();
+    handleCheckoutReturn();
+  }catch(e){ console.warn('Account unavailable', e); acct.ready = true; render() }
+}
+async function refreshSub(){
+  if(!sb) return;
+  if(!acct.user){ acct.sub = null; applyEntitlement(); return }
+  const {data, error} = await sb.from('subscriptions').select('status,plan,current_period_end,cancel_at_period_end').eq('user_id', acct.user.id).maybeSingle();
+  if(error) return render(); // offline: behold det, vi ved
+  acct.sub = data; applyEntitlement();
+}
+function applyEntitlement(){
+  const s = acct.sub, ok = s && ['active','trialing','past_due'].includes(s.status) && (!s.current_period_end || new Date(s.current_period_end) > new Date());
+  if(ok) S.profile.premium = {source:'stripe', plan:s.plan, until:s.current_period_end, status:s.status, cancel:s.cancel_at_period_end};
+  else if(S.profile.premium && S.profile.premium.source === 'stripe') S.profile.premium = null;
+  save(); render();
+}
+async function callFn(name, body){
+  const {data, error} = await sb.functions.invoke(name, {body: body || {}});
+  if(error){ let code = 'server_error'; try{ code = (await error.context.json()).error || code }catch(_){} throw code }
+  return data;
+}
+const ERR = {not_signed_in:'Please sign in first.', already_premium:'You already have Premium.', no_customer:'No subscription found.', unknown_plan:'Unknown plan.', server_error:'Something went wrong. Please try again.'};
+async function sendCode(e){
+  e && e.preventDefault();
+  const m = ($('#acEmail')?.value || '').trim();
+  if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
+  acct.busy = true; render();
+  const {error} = await sb.auth.signInWithOtp({email:m, options:{shouldCreateUser:true}});
+  acct.busy = false;
+  if(error){ toast(error.status === 429 ? 'Too many tries. Wait a minute and try again.' : 'Could not send the code. Check your email address.'); return render() }
+  acct.email = m; acct.step = 'code'; render(); setTimeout(()=>$('#acCode')?.focus(), 50);
+}
+async function verifyCode(e){
+  e && e.preventDefault();
+  const code = ($('#acCode')?.value || '').replace(/\s/g,'');
+  if(!/^\d{6,10}$/.test(code)) return toast('Enter the code from the email');
+  acct.busy = true; render();
+  const {error} = await sb.auth.verifyOtp({email:acct.email, token:code, type:'email'});
+  acct.busy = false;
+  if(error){ toast('That code did not work. Check it or send a new one.'); return render() }
+  acct.step = 'email'; track('signed-in'); toast('Signed in'); await refreshSub();
+}
+async function signOut(){ if(sb) await sb.auth.signOut(); acct.user = null; acct.sub = null; applyEntitlement(); toast('Signed out') }
+async function startCheckout(){
+  if(!acct.user) return toast('Please sign in first');
+  acct.busy = true; render(); track('checkout-start-' + plan);
+  try{ const d = await callFn('create-checkout', {plan}); location.href = d.url }
+  catch(code){ acct.busy = false; render(); toast(ERR[code] || ERR.server_error); if(code==='already_premium') refreshSub() }
+}
+async function openPortal(){
+  acct.busy = true; render();
+  try{ const d = await callFn('customer-portal'); location.href = d.url }
+  catch(code){ acct.busy = false; render(); toast(ERR[code] || ERR.server_error) }
+}
+async function handleCheckoutReturn(){
+  const q = new URLSearchParams(location.search), r = q.get('checkout');
+  if(!r) return;
+  window.history.replaceState(null, '', location.pathname + '?app');
+  if(r === 'cancel'){ toast('Payment cancelled – nothing was charged'); return }
+  track('checkout-success'); toast('Thanks! Activating Premium…');
+  for(let i=0;i<8 && !(S.profile.premium && S.profile.premium.source==='stripe');i++){ await new Promise(r=>setTimeout(r,2500)); await refreshSub() }
+  if(isPremium()){ toast('Premium is active – enjoy!'); go('premium') } else toast('Payment received. Premium will appear in a moment – try reopening the app.');
+}
+function loginHTML(){
+  if(!acct.ready) return `<p class="small mut">Connecting…</p>`;
+  if(acct.step === 'code') return `<form onsubmit="verifyCode(event)"><p class="small">We sent a code to <b>${esc(acct.email)}</b>. Enter it here:</p>
+    <input id="acCode" class="txt" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" aria-label="Code from email" style="letter-spacing:4px;font-size:22px;text-align:center">
+    <button class="btn pri block" style="margin-top:10px" ${acct.busy?'disabled':''}>${acct.busy?'Checking…':'Sign in'}</button>
+    <button type="button" class="link" onclick="acct.step='email';render()">Use another email or resend</button></form>`;
+  return `<form onsubmit="sendCode(event)"><p class="small mut">Sign in with your email to buy and keep Premium. No password – we send you a code. Your workouts stay on this phone.</p>
+    <div class="row"><input id="acEmail" class="txt grow" type="email" autocomplete="email" required placeholder="you@email.com" aria-label="Your email" value="${esc(acct.email)}">
+    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':'Send code'}</button></div></form>`;
+}
+const fmtDate = d => d ? dkLong(d) : '';
+
+/* ============================== PREMIUM ============================== */
 let plan = 'year', premFrom = '';
 function openPremium(from){ premFrom = from || ''; track('premium-view'); if(from) track('premium-click-' + from); go('premium') }
 function renderPremium(app){
   const yes = ic('check'), no = '<span class="no">—</span>';
   const w = S.profile.waitlist, interest = S.profile.interest;
+  const active = S.profile.premium && S.profile.premium.source === 'stripe';
   app.innerHTML = `<div class="wrap">
     ${header(`<button class="iconbtn back" onclick="go('home')" aria-label="Back">${ic('chevL')}</button><h1>Premium</h1>`, '')}
+    ${active ? buyHTML() : ''}
     <div class="hero"><span class="pill">${ic('crown')} LIFT Premium</span>
       <h2 style="margin-top:12px">Keep getting stronger</h2>
       <p class="mut">More programs when you're ready for the next level – tailored to your equipment and your goal.</p></div>
@@ -781,19 +923,36 @@ function renderPremium(app){
       <tr><td>Tailored to your equipment and goal</td><td>${no}</td><td>${yes}</td></tr>
       <tr><td>Advanced stats</td><td>${no}</td><td>${yes}</td></tr>
       <tr><td>Export to CSV and PDF</td><td>${no}</td><td>${yes}</td></tr></table></div>
-    <button class="plan ${plan==='year'?'on':''}" onclick="plan='year';render()" aria-pressed="${plan==='year'}"><span class="tag">Save 40%</span>
+    ${active ? '' : plansHTML()}
+    ${active ? '' : (payEnabled() ? buyHTML() : waitlistHTML())}
+  </div>`;
+}
+function plansHTML(){
+  return `<button class="plan ${plan==='year'?'on':''}" onclick="plan='year';render()" aria-pressed="${plan==='year'}"><span class="tag">Save 40%</span>
       <div class="row between wrapf"><div><b>Yearly</b><div class="small mut">Just ${Math.round(CONFIG.priceYear/12)} ${CONFIG.currency}/month</div></div><div class="price">${CONFIG.priceYear} ${CONFIG.currency}<span class="small mut"> /yr</span></div></div></button>
     <button class="plan ${plan==='month'?'on':''}" onclick="plan='month';render()" aria-pressed="${plan==='month'}">
-      <div class="row between wrapf"><div><b>Monthly</b><div class="small mut">Cancel anytime</div></div><div class="price">${CONFIG.priceMonth} ${CONFIG.currency}<span class="small mut"> /mo</span></div></div></button>
-    ${interest ? `<div class="card how center"><b class="neon">Thanks for your interest!</b><p class="small mut">Premium isn't open yet. Join the waitlist below to be the first to know – and get ${CONFIG.trialDays} days free.</p></div>`
+      <div class="row between wrapf"><div><b>Monthly</b><div class="small mut">Cancel anytime</div></div><div class="price">${CONFIG.priceMonth} ${CONFIG.currency}<span class="small mut"> /mo</span></div></div></button>`;
+}
+function buyHTML(){
+  const p = S.profile.premium;
+  if(p && p.source === 'stripe') return `<div class="card how"><h3>${ic('crown','sm')} You have Premium</h3>
+    <p class="small">${p.plan==='year'?'Yearly':'Monthly'} plan · ${p.status==='trialing'?'free trial until':p.cancel?'ends':'renews'} <b>${fmtDate(p.until)}</b></p>
+    <button class="btn block" onclick="openPortal()" ${acct.busy?'disabled':''}>Manage subscription</button></div>`;
+  return `${acct.user ? `<button class="btn pri block" style="margin-top:6px" onclick="startCheckout()" ${acct.busy?'disabled':''}>${acct.busy?'Opening secure payment…':`Start ${CONFIG.trialDays}-day free trial`}</button>
+      <p class="xs mut center">Then ${plan==='year'?CONFIG.priceYear+' '+CONFIG.currency+' per year':CONFIG.priceMonth+' '+CONFIG.currency+' per month'}. Cancel anytime before the trial ends and you pay nothing. Secure payment by Stripe.</p>
+      <p class="xs mut center">Signed in as ${esc(acct.user.email)} · <button class="link" style="min-height:0;padding:0;font-size:12.5px" onclick="signOut()">Sign out</button></p>`
+    : `<div class="card"><h3>${ic('user','sm')} Sign in to start</h3>${loginHTML()}</div>`}`;
+}
+function waitlistHTML(){
+  const w = S.profile.waitlist, interest = S.profile.interest;
+  return `${interest ? `<div class="card how center"><b class="neon">Thanks for your interest!</b><p class="small mut">Premium isn't open yet. Join the waitlist below to be the first to know – and get ${CONFIG.trialDays} days free.</p></div>`
       : `<button class="btn pri block" style="margin-top:6px" onclick="tryFree()">Try free for ${CONFIG.trialDays} days</button>`}
     <div class="card"><h3>${ic('mail','sm')} Waitlist</h3>
-      ${w ? `<p class="small">You're on the list with <b>${esc(w.email)}</b>. We'll let you know when Premium opens.</p>`
-        : CONFIG.waitlistUrl ? `<p class="small mut">Get notified when Premium opens.</p><a class="btn block" href="${esc(CONFIG.waitlistUrl)}" target="_blank" rel="noopener" onclick="track('waitlist-click')">Join the waitlist</a>`
+      ${w ? `<p class="small">${w.email==='(form)' ? 'Thanks for signing up!' : `You're on the list with <b>${esc(w.email)}</b>.`} We'll let you know when Premium opens.</p>`
+        : CONFIG.waitlistUrl ? `<p class="small mut">Get notified when Premium opens.</p><a class="btn block" href="${esc(CONFIG.waitlistUrl)}" target="_blank" rel="noopener" onclick="S.profile.waitlist={email:'(form)',at:new Date().toISOString()};save();track('waitlist-click')">Join the waitlist</a>`
         : `<p class="small mut">Get notified when Premium opens.</p><form onsubmit="joinWaitlist(event)" class="row"><input class="txt grow" type="email" required placeholder="you@email.com" aria-label="Your email" id="wlmail"><button class="btn sm pri" style="min-height:52px">Join</button></form>`}
     </div>
-    <p class="xs mut center">You won't be charged. Payments are not switched on yet.</p>
-  </div>`;
+    <p class="xs mut center">You won't be charged. Payments are not switched on yet.</p>`;
 }
 function tryFree(){ S.profile.interest = {plan, at:new Date().toISOString(), from:premFrom}; save(); track('trial-click-' + plan); render() }
 function joinWaitlist(e){ e.preventDefault(); const m = $('#wlmail').value.trim(); if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
@@ -830,5 +989,6 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 /* ============================== START ============================== */
 let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(()=>{ if(view==='progress') render() }, 200) });
 load();
+initAccount();
 if(S.summary) view = 'done';
 render();

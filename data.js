@@ -10,7 +10,8 @@
        start: startvægt / start-gentagelser første gang
        needs: udstyr der kræves, fx ['haandvaegte'] (se UDSTYR) – [] = intet
        alt:   øvelse der bruges i stedet, hvis man mangler udstyret (Premium)
-       a:     animation: squat | push | hinge | press | row | bridge | lunge | plank | pull | swing
+       a:     animation: squat | push | bench | hinge | press | pike | chestpress | row | invrow | bridge | lunge | plank | pull | swing
+       vis:   (valgfri) udstyr i animationen: barbell | dumbbell | kb | band | cable | sled | table
        rest:  pause i sekunder efter hvert sæt
        cue:   2-3 korte tekniktrin
        video: (valgfri) sti til EGEN video, fx 'videos/squat.mp4'. Brug kun egne
@@ -36,8 +37,13 @@ const CONFIG = {
   goatcounterCode: '',
   // Venteliste: link til fx en gratis Tally- eller Google-formular. Tom = gem kun interesse lokalt.
   waitlistUrl: '',
-  // Vis "Til test"-knapper i Profil (slå Premium til, eksempeldata). Sæt til false før lancering.
-  showTestTools: true,
+  // Testknapper i Profil (slå Premium til, eksempeldata). false = skjult for brugere.
+  // Du kan stadig se dem ved at åbne appen med ?test, fx .../Lift/?app&test
+  showTestTools: false,
+  // Betaling og login (Supabase + Stripe). Tom = Premium-siden viser venteliste i stedet.
+  // Se SETUP.md for hvordan du får dem. Begge værdier må gerne være offentlige.
+  supabaseUrl: '',        // fx 'https://abcdefgh.supabase.co'
+  supabaseAnonKey: '',    // "anon public" nøglen fra Supabase
 };
 
 const UDSTYR = {stang:'Barbell + rack', baenk:'Bench', haandvaegte:'Dumbbells', kettlebell:'Kettlebell', elastik:'Resistance band', pullupbar:'Pull-up bar', maskiner:'Cables & machines'};
@@ -51,15 +57,15 @@ const MAAL = {
 const EX = {
   squat_bw:{n:'Squat',t:'bw',inc:1,start:10,needs:[],a:'squat',rest:60,cue:['Feet shoulder-width apart, arms forward','Sit down and back – like onto a chair','Knees follow your toes, back straight']},
   pushup:{n:'Push-ups',t:'bw',inc:1,start:6,needs:[],a:'push',rest:60,cue:['Hands slightly wider than your shoulders','Keep your body straight like a plank','Too hard? Put your knees on the floor']},
-  table_row:{n:'Table row',t:'bw',inc:1,start:6,needs:[],a:'row',rest:60,cue:['Lie under a sturdy table and grab the edge','Keep your body straight','Pull your chest up towards the edge']},
+  table_row:{n:'Table row',t:'bw',inc:1,start:6,needs:[],a:'invrow',rest:60,cue:['Lie under a sturdy table and grab the edge','Keep your body straight','Pull your chest up towards the edge']},
   glute_bridge:{n:'Glute bridge',t:'bw',inc:1,start:12,needs:[],a:'bridge',rest:45,cue:['Lie on your back, feet close to your bum','Push your hips up into a straight line','Squeeze your glutes at the top']},
   lunge:{n:'Lunges',t:'bw',inc:1,start:8,needs:[],a:'lunge',rest:60,cue:['Take a long step forward','Lower your back knee towards the floor','Reps are per leg']},
-  pike_pushup:{n:'Pike push-up',t:'bw',inc:1,start:5,needs:[],a:'press',rest:60,cue:['Hips high – body like an upside-down V','Bend your arms and lower your head to the floor','Push back up']},
+  pike_pushup:{n:'Pike push-up',t:'bw',inc:1,start:5,needs:[],a:'pike',rest:60,cue:['Hips high – body like an upside-down V','Bend your arms and lower your head to the floor','Push back up']},
   plank:{n:'Plank',t:'s',inc:5,start:20,needs:[],a:'plank',rest:45,cue:['Elbows under your shoulders','Brace your abs and glutes','Keep your body straight – breathe calmly']},
   squat_bb:{n:'Barbell squat',t:'w',inc:2.5,start:20,needs:['stang'],alt:'goblet',a:'squat',rest:120,cue:['The bar rests on your upper back','Sit down and back – knees follow your toes','Go down until your thighs are level, then push up']},
   goblet:{n:'Goblet squat',t:'w',inc:2.5,start:8,needs:['haandvaegte'],alt:'squat_bw',a:'squat',rest:90,cue:['Hold the dumbbell close to your chest','Back straight, elbows pointing down','Sit deep and stand up']},
-  bench:{n:'Bench press',t:'w',inc:2.5,start:20,needs:['stang','baenk'],alt:'db_bench',a:'push',rest:120,cue:['Squeeze your shoulder blades together','Lower the bar slowly to your chest','Press up over your shoulders']},
-  db_bench:{n:'Dumbbell chest press',t:'w',inc:2.5,start:8,needs:['haandvaegte'],alt:'pushup',a:'push',rest:90,cue:['Lie on a bench or the floor, weights over your chest','Lower until elbows are about 45° from your body','Press back up']},
+  bench:{n:'Bench press',t:'w',inc:2.5,start:20,needs:['stang','baenk'],alt:'db_bench',a:'bench',rest:120,cue:['Squeeze your shoulder blades together','Lower the bar slowly to your chest','Press up over your shoulders']},
+  db_bench:{n:'Dumbbell chest press',t:'w',inc:2.5,start:8,needs:['haandvaegte'],alt:'pushup',a:'bench',rest:90,cue:['Lie on a bench or the floor, weights over your chest','Lower until elbows are about 45° from your body','Press back up']},
   row_bb:{n:'Barbell row',t:'w',inc:2.5,start:20,needs:['stang'],alt:'db_row',a:'row',rest:90,cue:['Hips back, flat back','Pull the bar to your belly button','Lower slowly']},
   db_row:{n:'One-arm row',t:'w',inc:2.5,start:8,needs:['haandvaegte'],alt:'table_row',a:'row',rest:75,cue:['Support your hand and knee on a bench','Pull the weight up towards your hip','Switch sides after the set']},
   ohp:{n:'Barbell overhead press',t:'w',inc:2.5,start:20,needs:['stang'],alt:'db_ohp',a:'press',rest:90,cue:['Stand firm, brace abs and glutes','Press the bar straight up','Lower it to your chin']},
@@ -71,7 +77,7 @@ const EX = {
   kb_swing:{n:'Kettlebell swing',t:'w',inc:4,start:12,needs:['kettlebell'],alt:'glute_bridge',a:'swing',rest:75,cue:['Feet slightly wider than your hips','Swing the bell back between your legs','Snap your hips forward – your arms are just ropes']},
   kb_goblet:{n:'Kettlebell goblet squat',t:'w',inc:4,start:8,needs:['kettlebell'],alt:'squat_bw',a:'squat',rest:75,cue:['Hold the bell in front of your chest','Sit down deep','Stand up with a straight back']},
   band_row:{n:'Band row',t:'bw',inc:1,start:12,needs:['elastik'],alt:'table_row',a:'row',rest:60,cue:['Anchor the band at chest height','Pull your elbows back','Release slowly']},
-  band_press:{n:'Band chest press',t:'bw',inc:1,start:12,needs:['elastik'],alt:'pushup',a:'push',rest:60,cue:['Band behind your back','Press your arms forward','Return with control']},
+  band_press:{n:'Band chest press',t:'bw',inc:1,start:12,needs:['elastik'],alt:'pushup',a:'chestpress',rest:60,cue:['Band behind your back','Press your arms forward','Return with control']},
 };
 
 // Opvarmning og nedkøling (bruges i alle programmer)

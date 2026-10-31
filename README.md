@@ -12,11 +12,15 @@ Mobile-first web app (PWA) for young beginners (15–22). Ready-made 4-week prog
 | `computer.html` | Viser appen i en telefonramme på computer. |
 | `sw.js` | Offline-cache. Hæv `CACHE`-versionen og `?v=`-tallet i `index.html`, når du ændrer filer. |
 
+## Opsætning
+Se **SETUP.md** for måling (GoatCounter), venteliste (Tally) og login + betaling (Supabase + Stripe).
+Serverkoden ligger i `supabase/`.
+
 ## Måling (valgfri)
 Opret en gratis konto på goatcounter.com og skriv din kode i `CONFIG.goatcounterCode` i `data.js`.
 Events: `evt-onboarding-done`, `evt-workout-complete`, `evt-reached-week-2`, `evt-reached-week-4`, `evt-program-complete`, `evt-premium-view`, `evt-premium-click-*`, `evt-trial-click-*`, `evt-waitlist-join`, `evt-backup`, `evt-calendar`.
 
-## Før lancering
-Sæt `CONFIG.showTestTools = false` i `data.js`.
+## Testknapper
+Åbn appen med `?app&test` for at se testknapperne.
 
 Kør lokalt: `python3 -m http.server` og åbn http://localhost:8000/?app
