@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d0c">
+<meta name="description" content="LØFT – styrketræning for begyndere. 4-ugers programmer, pausetimer og automatisk vægtlog.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LØFT">
+<script>
+(function(){ // På computer: vis appen i en telefon-ramme
+  var standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  var desktop = matchMedia('(min-width: 760px) and (hover: hover) and (pointer: fine)').matches;
+  var framed = window.top !== window.self;
+  if(desktop && !standalone && !framed && location.protocol.indexOf('http')===0 && !/[?&]app/.test(location.search)) location.replace('desktop.html');
+})();
+</script>
+<title>LØFT – styrketræning for begyndere</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0d0c; --bg2:#121614; --card:#171c19; --line:#26302b; --txt:#eef3f0; --mut:#8c9a93;
+  --neon:#39ff7a; --neon2:#1fd660; --neonDim:rgba(57,255,122,.14); --warn:#ffcc33; --bad:#ff5a5a;
+  --r:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;font-size:17px;line-height:1.4}
+body{min-height:100vh;padding-bottom:calc(96px + env(safe-area-inset-bottom));padding-top:env(safe-area-inset-top)}
+h1,h2,h3{font-family:"Archivo Black",Inter,sans-serif;font-weight:400;letter-spacing:.3px;margin:0 0 10px}
+h1{font-size:30px}h2{font-size:22px}h3{font-size:18px}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px}
+.mut{color:var(--mut)}.small{font-size:14px}.neon{color:var(--neon)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:12px 0}
+.row{display:flex;gap:10px;align-items:center}.between{justify-content:space-between}.wrapflex{flex-wrap:wrap}
+.btn{appearance:none;border:0;border-radius:16px;min-height:60px;padding:0 20px;font:800 18px Inter,sans-serif;cursor:pointer;
+  background:var(--bg2);color:var(--txt);border:2px solid var(--line);display:inline-flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--neon);color:#04140a;border-color:var(--neon);box-shadow:0 0 24px rgba(57,255,122,.35)}
+.btn.ghost{background:transparent}
+.btn.block{width:100%}
+.btn.sm{min-height:46px;font-size:15px;padding:0 14px;border-radius:12px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.pill{display:inline-block;padding:4px 10px;border-radius:99px;font-size:13px;font-weight:800;background:var(--neonDim);color:var(--neon)}
+.pill.lock{background:rgba(255,204,51,.14);color:var(--warn)}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{font-family:"Archivo Black";font-size:30px;letter-spacing:1px}.logo span{color:var(--neon);text-shadow:0 0 18px rgba(57,255,122,.6)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;padding-bottom:env(safe-area-inset-bottom);background:rgba(11,13,12,.96);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:20;backdrop-filter:blur(8px)}
+nav.tabs .in{display:flex;max-width:560px;width:100%}
+nav.tabs button{flex:1;background:none;border:0;color:var(--mut);font:700 13px Inter;min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+nav.tabs button svg{width:28px;height:28px}
+nav.tabs button.on{color:var(--neon)}
+.big{font-family:"Archivo Black";font-size:44px;line-height:1}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat b{display:block;font-family:"Archivo Black";font-size:24px;color:var(--neon);font-weight:400}
+.weeks{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin:10px 0}
+.weeks i{height:10px;border-radius:4px;background:var(--line)}.weeks i.d{background:var(--neon)}.weeks i.n{background:var(--neon);opacity:.45;animation:pulse 1.2s infinite alternate}
+@keyframes pulse{to{opacity:1}}
+.ex{border-radius:var(--r);background:var(--card);border:1px solid var(--line);margin:14px 0;overflow:hidden}
+.ex .hd{padding:14px 16px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ex .sug{margin:0 16px 10px;padding:10px 12px;border-radius:12px;background:var(--neonDim);color:var(--neon);font-weight:600;font-size:15px}
+.ex .sug.keep{background:rgba(255,255,255,.05);color:var(--txt)}
+.ex .sug.down{background:rgba(255,204,51,.12);color:var(--warn)}
+.set{display:grid;grid-template-columns:34px 1fr 1fr 64px;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--line)}
+.set.done{background:rgba(57,255,122,.06)}
+.set .n{font-weight:800;color:var(--mut);text-align:center}
+.stepper{display:flex;align-items:center;background:var(--bg2);border-radius:12px;border:1px solid var(--line);height:56px}
+.stepper button{width:40px;height:100%;border:0;background:none;color:var(--txt);font:800 24px Inter;cursor:pointer}
+.stepper input{flex:1;min-width:0;width:100%;background:none;border:0;color:var(--txt);font:800 20px Inter;text-align:center;-moz-appearance:textfield}
+.stepper input::-webkit-inner-spin-button{-webkit-appearance:none}
+.stepper small{display:block;font-size:10px;color:var(--mut);text-align:center;margin-top:-4px}
+.chk{width:60px;height:56px;border-radius:14px;border:2px solid var(--line);background:var(--bg2);color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.chk svg{width:28px;height:28px}
+.set.done .chk{background:var(--neon);border-color:var(--neon);color:#04140a}
+.lbl{display:grid;grid-template-columns:34px 1fr 1fr 64px;gap:8px;padding:0 12px 6px;font-size:12px;color:var(--mut);font-weight:700;text-transform:uppercase;text-align:center}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg2);border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;width:100%;max-width:560px;max-height:92vh;overflow:auto;padding:20px 18px 28px;animation:up .2s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.timer{text-align:center}
+.timer .t{font-family:"Archivo Black";font-size:96px;color:var(--neon);text-shadow:0 0 30px rgba(57,255,122,.45);line-height:1.1}
+.ring{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin:10px 0 18px}.ring i{display:block;height:100%;background:var(--neon);transition:width .25s linear}
+.restbar{position:fixed;left:0;right:0;bottom:76px;z-index:30;display:flex;justify-content:center;pointer-events:none}
+.restbar .in{pointer-events:auto;max-width:560px;width:calc(100% - 24px);background:var(--neon);color:#04140a;border-radius:16px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:800;box-shadow:0 8px 30px rgba(57,255,122,.35);cursor:pointer}
+.restbar .in b{font-family:"Archivo Black";font-size:26px;font-weight:400}
+.prog{cursor:pointer;position:relative}
+.prog.active{border-color:var(--neon);box-shadow:0 0 0 1px var(--neon) inset}
+select,input.txt{width:100%;min-height:56px;background:var(--bg2);border:2px solid var(--line);color:var(--txt);border-radius:14px;padding:0 14px;font:700 17px Inter}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:50px;padding:0 16px;border-radius:99px;border:2px solid var(--line);background:var(--bg2);color:var(--txt);font:700 15px Inter;cursor:pointer}
+.chip.on{border-color:var(--neon);color:var(--neon);background:var(--neonDim)}
+.plan{border:2px solid var(--line);border-radius:18px;padding:16px;margin:10px 0;cursor:pointer;position:relative;background:var(--card)}
+.plan.on{border-color:var(--neon);box-shadow:0 0 22px rgba(57,255,122,.2)}
+.plan .price{font-family:"Archivo Black";font-size:28px}
+.plan .tag{position:absolute;top:-12px;right:14px;background:var(--neon);color:#04140a;font-weight:800;font-size:13px;padding:3px 10px;border-radius:99px}
+ul.feat{list-style:none;padding:0;margin:10px 0}ul.feat li{padding:6px 0 6px 30px;position:relative}
+ul.feat li:before{content:"";position:absolute;left:4px;top:11px;width:14px;height:8px;border-left:3px solid var(--neon);border-bottom:3px solid var(--neon);transform:rotate(-45deg)}
+.demo{background:#0e1310;border-radius:14px;border:1px solid var(--line);display:flex;justify-content:center;padding:8px;position:relative}
+.demo svg{width:220px;height:220px}
+.demo .badge{position:absolute;top:8px;left:8px;font-size:11px;font-weight:800;color:var(--mut);background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px}
+ol.cue{padding-left:22px}ol.cue li{margin:6px 0}
+canvas{width:100%;display:block}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--neon);color:#04140a;padding:12px 18px;border-radius:14px;font-weight:800;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:90vw;text-align:center}
+textarea{width:100%;min-height:160px;background:var(--bg2);color:var(--txt);border:1px solid var(--line);border-radius:12px;font:13px ui-monospace,monospace;padding:10px}
+.locked{position:relative}.locked .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,13,12,.3),rgba(11,13,12,.92));display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:var(--r);gap:10px;text-align:center;padding:16px}
+.blur{filter:blur(3px);pointer-events:none}
+.acct{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:99px;padding:6px 12px 6px 6px;font-size:13px;font-weight:700;cursor:pointer;color:var(--txt)}
+.acct .av{width:30px;height:30px;border-radius:50%;background:var(--neonDim);color:var(--neon);display:flex;align-items:center;justify-content:center;font-weight:800}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mut);display:inline-block}.dot.ok{background:var(--neon);box-shadow:0 0 8px var(--neon)}.dot.warn{background:var(--warn)}
+.install{position:fixed;left:12px;right:12px;bottom:calc(88px + env(safe-area-inset-bottom));z-index:25;max-width:536px;margin:0 auto;background:var(--card);border:2px solid var(--neon);border-radius:18px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.list-log{border-top:1px solid var(--line);padding:10px 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="restbar"></div>
+<nav class="tabs" id="tabs"><div class="in"></div></nav>
+<div id="modal"></div>
+
+<script>
+/* ============================== DATA ============================== */
+const EQ = {stang:'Vægtstang + stativ', baenk:'Bænk', haandvaegte:'Håndvægte', kettlebell:'Kettlebell', elastik:'Elastikbånd', pullupbar:'Pull-up-stang', maskiner:'Kabel & maskiner'};
+const GOALS = {generel:{n:'Generel form',d:'Programmets standard'}, styrke:{n:'Blive stærkere',d:'Færre gentagelser (5), tungere, længere pauser'}, muskler:{n:'Opbygge muskler',d:'8–12 gentagelser, kortere pauser'}};
+// t: w = vægt (kg), bw = kropsvægt (gentagelser), s = tid (sekunder)
+const EX = {
+  squat_bb:{n:'Squat med stang',t:'w',inc:2.5,start:20,needs:['stang'],alt:'goblet',a:'squat',rest:150,cue:['Stangen hviler på øvre ryg, fødder i skulderbredde','Spænd maven, sæt dig ned og bagud – knæ følger tæerne','Gå mindst til parallel, pres op gennem hele foden']},
+  goblet:{n:'Goblet squat',t:'w',inc:2,start:8,needs:['haandvaegte'],alt:'squat_bw',a:'squat',rest:90,cue:['Hold håndvægten tæt ind til brystet','Albuer peger nedad, ryggen rank','Sæt dig dybt ned mellem knæene og rejs dig']},
+  squat_bw:{n:'Squat (kropsvægt)',t:'bw',inc:1,start:10,needs:[],a:'squat',rest:60,cue:['Fødder i skulderbredde, armene frem','Sæt dig ned og bagud som mod en stol','Hele foden i gulvet, rejs dig med kontrol']},
+  bench:{n:'Bænkpres',t:'w',inc:2.5,start:20,needs:['stang','baenk'],alt:'db_bench',a:'push',rest:150,cue:['Skulderblade samlet og trukket ned','Sænk stangen kontrolleret til nederste del af brystet','Pres op og lidt tilbage over skuldrene']},
+  db_bench:{n:'Håndvægtspres',t:'w',inc:2,start:8,needs:['haandvaegte'],alt:'pushup',a:'push',rest:90,cue:['Lig på bænk eller gulv, vægte over brystet','Sænk til albuerne er ca. 45° fra kroppen','Pres op og saml vægtene let i toppen']},
+  pushup:{n:'Armstrækninger',t:'bw',inc:1,start:6,needs:[],a:'push',rest:60,cue:['Hænder lidt bredere end skuldrene','Krop som en planke – fra hoved til hæl','Brystet ned mod gulvet, pres op. Brug knæene hvis nødvendigt']},
+  row_bb:{n:'Roning med stang',t:'w',inc:2.5,start:20,needs:['stang'],alt:'db_row',a:'row',rest:120,cue:['Hofterne bagud, ryggen flad ca. 45°','Træk stangen til navlen','Saml skulderbladene i toppen, sænk kontrolleret']},
+  db_row:{n:'Etarms roning',t:'w',inc:2,start:8,needs:['haandvaegte'],alt:'band_row',a:'row',rest:75,cue:['Støt hånd og knæ på bænk/stol','Træk vægten op mod hoften','Sænk langsomt, skift side efter sættet']},
+  band_row:{n:'Roning med elastik',t:'bw',inc:1,start:12,needs:['elastik'],alt:'table_row',a:'row',rest:60,cue:['Fastgør elastikken i brysthøjde','Træk albuerne bagud, tæt på kroppen','Hold 1 sek. og slip kontrolleret']},
+  table_row:{n:'Roning under bord',t:'bw',inc:1,start:6,needs:[],a:'row',rest:60,cue:['Lig under et solidt bord, tag fat i kanten','Hold kroppen strakt','Træk brystet op mod bordkanten']},
+  ohp:{n:'Skulderpres med stang',t:'w',inc:2.5,start:20,needs:['stang'],alt:'db_ohp',a:'press',rest:120,cue:['Stå fast, spænd balder og mave','Pres stangen lige op – hovedet ud af vejen','Lås armene over hovedet, sænk til hagen']},
+  db_ohp:{n:'Skulderpres m. håndvægte',t:'w',inc:2,start:6,needs:['haandvaegte'],alt:'pike_pushup',a:'press',rest:90,cue:['Vægtene i skulderhøjde, håndfladerne frem','Pres op til strakte arme','Sænk kontrolleret til skuldrene']},
+  pike_pushup:{n:'Pike push-up',t:'bw',inc:1,start:5,needs:[],a:'press',rest:60,cue:['Hofterne højt, kroppen som et omvendt V','Bøj armene og sænk hovedet mod gulvet','Pres op igen']},
+  rdl:{n:'Rumænsk dødløft',t:'w',inc:2.5,start:30,needs:['stang'],alt:'db_rdl',a:'hinge',rest:120,cue:['Let bøjede knæ, stangen tæt på benene','Skub hofterne bagud med flad ryg','Stop når du mærker baglåret, pres hofterne frem']},
+  db_rdl:{n:'Rumænsk dødløft m. håndvægte',t:'w',inc:2,start:10,needs:['haandvaegte'],alt:'glute_bridge',a:'hinge',rest:90,cue:['Vægtene foran lårene','Hofterne bagud, ryggen flad','Rejs dig ved at presse hofterne frem']},
+  deadlift:{n:'Dødløft',t:'w',inc:5,start:40,needs:['stang'],alt:'db_rdl',a:'hinge',rest:180,cue:['Stangen over midtfoden, greb lige udenfor benene','Bryst frem, flad ryg, spænd lats','Skub gulvet væk og stå helt op']},
+  glute_bridge:{n:'Hoftehæv (glute bridge)',t:'bw',inc:1,start:12,needs:[],a:'bridge',rest:45,cue:['Lig på ryggen, fødderne tæt på numsen','Pres hofterne op til en lige linje','Klem balderne 1 sek. i toppen']},
+  lunge:{n:'Udfaldsskridt',t:'bw',inc:1,start:8,needs:[],a:'lunge',rest:60,cue:['Tag et langt skridt frem','Sænk bagerste knæ mod gulvet','Pres tilbage – antal pr. ben']},
+  plank:{n:'Planke',t:'s',inc:5,start:20,needs:[],a:'plank',rest:45,cue:['Albuer under skuldrene','Spænd mave og balder','Hold kroppen helt lige – træk vejret roligt']},
+  latpull:{n:'Lat pulldown',t:'w',inc:2.5,start:25,needs:['maskiner'],alt:'neg_pullup',a:'pull',rest:90,cue:['Bredt greb, læn dig en anelse tilbage','Træk stangen til øverste del af brystet','Lad armene strække helt ud på vej op']},
+  neg_pullup:{n:'Negative pull-ups',t:'bw',inc:1,start:3,needs:['pullupbar'],alt:'band_row',a:'pull',rest:90,cue:['Hop op så hagen er over stangen','Sænk dig så langsomt som muligt (3–5 sek.)','Hop op igen og gentag']},
+  legpress:{n:'Benpres',t:'w',inc:5,start:40,needs:['maskiner'],alt:'goblet',a:'squat',rest:120,cue:['Fødderne midt på pladen i skulderbredde','Sænk til knæene er ca. 90°','Pres op uden at låse knæene']},
+  kb_swing:{n:'Kettlebell swing',t:'w',inc:4,start:12,needs:['kettlebell'],alt:'glute_bridge',a:'swing',rest:75,cue:['Fødder lidt bredere end hofterne','Sving klokken bagud mellem benene','Eksplodér med hofterne – armene er bare reb']},
+  kb_goblet:{n:'Kettlebell goblet squat',t:'w',inc:4,start:8,needs:['kettlebell'],alt:'squat_bw',a:'squat',rest:75,cue:['Hold klokken ved hornene foran brystet','Sæt dig dybt ned','Rejs dig med rank ryg']},
+  band_press:{n:'Brystpres med elastik',t:'bw',inc:1,start:12,needs:['elastik'],alt:'pushup',a:'push',rest:60,cue:['Elastik bag ryggen eller fastgjort bag dig','Pres armene frem til de er strakte','Tilbage med kontrol']},
+};
+const E = (id,s,r) => ({id,s,r});
+const PROGRAMS = [
+  {id:'hjem', name:'Kom i gang – Hjemme', loc:'Hjemme', free:true, equip:'Intet udstyr', desc:'Fuldkrop med kropsvægt. Perfekt første skridt – 3 dage om ugen, ca. 30 min.',
+   days:[
+    {n:'Dag A',ex:[E('squat_bw',3,12),E('pushup',3,8),E('table_row',3,8),E('glute_bridge',3,15),E('plank',3,30)]},
+    {n:'Dag B',ex:[E('lunge',3,8),E('pike_pushup',3,6),E('glute_bridge',3,15),E('table_row',3,8),E('plank',2,40)]},
+    {n:'Dag C',ex:[E('squat_bw',4,10),E('pushup',4,6),E('lunge',3,8),E('table_row',3,10),E('plank',3,30)]}]},
+  {id:'gym', name:'Fitness Basis', loc:'Fitnesscenter', equip:'Stang, bænk, maskiner', desc:'Klassisk begynderprogram med de store basisløft. Lær teknikken og bliv hurtigt stærkere.',
+   days:[
+    {n:'Dag A',ex:[E('squat_bb',3,5),E('bench',3,5),E('row_bb',3,8),E('plank',3,30)]},
+    {n:'Dag B',ex:[E('deadlift',1,5),E('ohp',3,5),E('latpull',3,10),E('lunge',3,10)]},
+    {n:'Dag C',ex:[E('squat_bb',3,5),E('db_bench',3,10),E('rdl',3,8),E('latpull',3,10)]}]},
+  {id:'maskine', name:'Fitness Maskiner', loc:'Fitnesscenter', equip:'Maskiner & håndvægte', desc:'Trygt og enkelt: maskiner og håndvægte, så du kan træne uden en spotter.',
+   days:[
+    {n:'Dag A',ex:[E('legpress',3,10),E('db_bench',3,10),E('latpull',3,10),E('plank',3,30)]},
+    {n:'Dag B',ex:[E('goblet',3,10),E('db_ohp',3,10),E('db_row',3,10),E('db_rdl',3,10)]},
+    {n:'Dag C',ex:[E('legpress',3,12),E('db_bench',3,12),E('latpull',3,12),E('glute_bridge',3,15)]}]},
+  {id:'haandvaegt', name:'Håndvægte Hjemme', loc:'Hjemme', equip:'Et sæt håndvægte', desc:'Når kropsvægt bliver for let: byg styrke derhjemme med et par håndvægte.',
+   days:[
+    {n:'Dag A',ex:[E('goblet',3,10),E('db_bench',3,10),E('db_row',3,10),E('plank',3,30)]},
+    {n:'Dag B',ex:[E('db_rdl',3,10),E('db_ohp',3,10),E('lunge',3,10),E('db_row',3,10)]},
+    {n:'Dag C',ex:[E('goblet',4,8),E('db_bench',4,8),E('db_rdl',3,10),E('glute_bridge',3,15)]}]},
+  {id:'kb', name:'Kettlebell & Elastik', loc:'Hjemme', equip:'Kettlebell + elastik', desc:'Kompakt, effektivt og pladsbesparende. Styrke og kondi i ét.',
+   days:[
+    {n:'Dag A',ex:[E('kb_goblet',3,10),E('band_press',3,12),E('band_row',3,12),E('kb_swing',3,15)]},
+    {n:'Dag B',ex:[E('kb_swing',4,12),E('pushup',3,8),E('lunge',3,10),E('band_row',3,12)]},
+    {n:'Dag C',ex:[E('kb_goblet',4,8),E('band_press',3,15),E('glute_bridge',3,15),E('plank',3,40)]}]},
+];
+const WEEKS = 4, PER_WEEK = 3, TOTAL = WEEKS*PER_WEEK;
+
+/* ============================== STATE & STORAGE ============================== */
+const LS_KEY = 'loft_v1';
+const blank = () => ({profile:{premium:null, activeProgram:'hjem', progress:{}, equipment:Object.keys(EQ), goal:'generel', sound:true, onboarded:false}, logs:[], current:null});
+let S = blank();
+let auth = {mode:'loading', name:'', uid:null};   // mode: loading | cloud | local
+const inHost = !!(window.claude && window.claude.use);
+let db = null, userCap = null, profileRef = null, logsCol = null;
+let writing = false, writeAgain = false, saveTimer = null;
+
+function lsLoad(){ try{ const j = localStorage.getItem(LS_KEY); return j ? JSON.parse(j) : null }catch(e){ return null } }
+function lsSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)) }catch(e){} }
+
+function save(){ // profile + igangværende træning
+  lsSave();
+  if(auth.mode !== 'cloud') return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushProfile, 600);
+}
+async function flushProfile(){
+  if(writing){ writeAgain = true; return }
+  writing = true;
+  try{ await profileRef.set({profile:S.profile, current:S.current ? JSON.stringify(S.current) : null, updated:Date.now()}); setSync('ok') }
+  catch(e){ setSync('err', e) }
+  writing = false;
+  if(writeAgain){ writeAgain = false; flushProfile() }
+}
+async function saveLog(log){
+  lsSave();
+  if(auth.mode !== 'cloud') return;
+  try{ await logsCol.doc(log.id).set(log); setSync('ok') }catch(e){ setSync('err', e) }
+}
+async function deleteAllCloud(){
+  if(auth.mode !== 'cloud') return;
+  for(const l of S.logs){ try{ await logsCol.doc(l.id).delete() }catch(e){} }
+}
+let syncState = 'ok';
+function setSync(s, e){
+  syncState = s;
+  if(s === 'err'){
+    if(e && e.code === 'invalid_argument'){ toast('Kunne ikke gemme i skyen – du har ikke skriveadgang. Data gemmes på denne enhed.'); auth.mode = 'local'; render() }
+    else if(e && e.code === 'quota_exceeded'){ toast('Lagerpladsen er fuld – data gemmes kun lokalt.') }
+    else toast('Kunne ikke synkronisere – prøver igen ved næste ændring');
+  }
+  const el = document.getElementById('syncdot'); if(el) el.className = 'dot ' + (s==='ok'?'ok':'warn');
+}
+
+async function initAuth(){
+  const local = lsLoad();
+  if(local) S = Object.assign(blank(), local, {profile:Object.assign(blank().profile, local.profile||{})});
+  render();
+  let timeout = setTimeout(()=>{ if(auth.mode==='loading'){ auth.mode='local'; render() } }, 10000);
+  try{
+    if(!window.claude || !window.claude.use) throw 0;
+    [db, userCap] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if(!db || !userCap) throw 0;
+    const uid = await userCap.id();
+    if(!uid) throw 0;
+    try{ const me = await userCap.me(); auth.name = (me && me.name) || '' }catch(e){}
+    auth.uid = uid;
+    profileRef = db.doc('data/users/' + uid + '/loft');
+    logsCol = profileRef.collection('logs');
+    const [ps, ls] = await Promise.all([profileRef.get(), logsCol.get()]);
+    clearTimeout(timeout);
+    auth.mode = 'cloud';
+    if(ps.exists){
+      const d = ps.data();
+      S.profile = Object.assign(blank().profile, d.profile || {});
+      try{ S.current = d.current ? JSON.parse(d.current) : null }catch(e){ S.current = null }
+      S.logs = ls.docs.map(x => x.data()).sort((a,b)=>a.d < b.d ? -1 : 1);
+      lsSave();
+    } else {
+      // Første login: flyt lokale data op i kontoen
+      await flushProfile();
+      for(const l of S.logs) await logsCol.doc(l.id).set(l);
+      if(S.logs.length || S.profile.onboarded) toast('Dine lokale data er gemt på din konto ✓');
+    }
+  }catch(e){
+    clearTimeout(timeout);
+    auth.mode = 'local';
+  }
+  render();
+}
+
+/* ============================== HELPERS ============================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isPremium = () => !!S.profile.premium;
+const prog = id => PROGRAMS.find(p => p.id === id);
+const fmtKg = w => (Math.round(w*10)/10).toString().replace('.',',');
+const unit = ex => ex.t==='w' ? 'kg' : ex.t==='s' ? 'sek' : 'gent.';
+const today = () => new Date().toISOString();
+const dk = d => new Date(d).toLocaleDateString('da-DK',{day:'numeric',month:'short'});
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+function toast(m){ const t = document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(), 2800) }
+
+function hasEquip(ex){ return ex.needs.every(n => S.profile.equipment.includes(n)) }
+function resolve(id){ // tilpas øvelse til udstyr (premium)
+  let e = id, guard = 0;
+  if(!isPremium()) return e;
+  while(!hasEquip(EX[e]) && EX[e].alt && guard++ < 6) e = EX[e].alt;
+  return e;
+}
+function targetReps(id, base){
+  const ex = EX[id];
+  if(!isPremium() || ex.t !== 'w') return base;
+  if(S.profile.goal === 'styrke') return 5;
+  if(S.profile.goal === 'muskler') return Math.max(8, Math.min(12, base < 8 ? 10 : base));
+  return base;
+}
+function restFor(id){
+  let r = EX[id].rest;
+  if(isPremium() && EX[id].t==='w'){ if(S.profile.goal==='styrke') r = Math.max(r,150); if(S.profile.goal==='muskler') r = Math.min(r,90) }
+  return r;
+}
+function history(id){
+  const out = [];
+  for(const l of S.logs) for(const e of l.ex) if(e.id === id && e.sets.length) out.push({d:l.d, target:e.target, sets:e.sets});
+  return out.sort((a,b)=> a.d < b.d ? -1 : 1);
+}
+// Automatisk progression
+function suggest(id, target){
+  const ex = EX[id], h = history(id);
+  if(!h.length) return {w: ex.t==='w' ? ex.start : 0, r: ex.t==='w' ? target : target, cls:'keep',
+    note: ex.t==='w' ? `Startforslag ${fmtKg(ex.start)} kg – vælg en vægt hvor de sidste gentagelser er hårde, men teknikken holder` : `Første gang – mål: ${target} ${unit(ex)}`};
+  const last = h[h.length-1];
+  const hit = s => s.r >= last.target;
+  const allHit = last.sets.length >= 1 && last.sets.every(hit);
+  if(ex.t === 'w'){
+    const lw = Math.max(...last.sets.map(s=>s.w));
+    if(allHit) return {w: lw + ex.inc, r: target, cls:'', note:`⬆ Øg til ${fmtKg(lw+ex.inc)} kg – du klarede alle sæt med ${fmtKg(lw)} kg sidst!`};
+    // tre mislykkede pas i træk på samme vægt => deload 10 %
+    const fails = h.slice(-3).filter(x => Math.max(...x.sets.map(s=>s.w)) === lw && !x.sets.every(s=>s.r>=x.target)).length;
+    if(fails >= 3){ const nw = Math.max(ex.inc, Math.round(lw*0.9/ex.inc)*ex.inc); return {w:nw, r:target, cls:'down', note:`↓ Gå ned til ${fmtKg(nw)} kg og byg op igen – det er helt normalt`} }
+    return {w: lw, r: target, cls:'keep', note:`Bliv på ${fmtKg(lw)} kg – klar alle ${target} gentagelser, så stiger vi`};
+  }
+  const best = Math.max(...last.sets.map(s=>s.r));
+  if(allHit){ const nr = Math.max(target, best + ex.inc); return {w:0, r:nr, cls:'', note:`⬆ Prøv ${nr} ${unit(ex)} pr. sæt i dag`} }
+  return {w:0, r:target, cls:'keep', note:`Mål: ${target} ${unit(ex)} i alle sæt`};
+}
+function progressOf(pid){ return S.profile.progress[pid] || 0 }
+
+/* ============================== SVG DEMO-ANIMATIONER ============================== */
+const P = (h,n,hp,k,f,el,hd,k2,f2) => ({h,n,hp,k,f,el,hd,k2:k2||k,f2:f2||f});
+const STAND = P([60,20],[60,32],[60,64],[60,87],[60,110],[64,48],[68,62]);
+const POSES = {
+  squat:[P([60,20],[60,32],[60,64],[61,87],[60,110],[70,44],[82,40]), P([74,44],[68,56],[40,80],[70,84],[60,110],[80,62],[92,60])],
+  push:[P([22,62],[32,68],[74,82],[92,95],[110,106],[32,89],[32,110]), P([22,90],[34,96],[74,100],[92,104],[110,106],[50,96],[32,110])],
+  hinge:[P([60,20],[60,32],[60,64],[60,87],[60,110],[61,48],[62,64]), P([92,44],[84,50],[52,62],[56,86],[60,110],[84,66],[84,82])],
+  press:[P([60,20],[60,32],[60,64],[60,87],[60,110],[74,40],[70,28]), P([60,20],[60,32],[60,64],[60,87],[60,110],[66,14],[62,0])],
+  row:[P([92,46],[84,52],[52,62],[56,86],[60,110],[84,70],[84,86]), P([92,46],[84,52],[52,62],[56,86],[60,110],[64,48],[74,64])],
+  bridge:[P([14,100],[25,101],[62,104],[86,84],[94,110],[38,108],[52,110]), P([14,100],[25,99],[62,82],[86,82],[94,110],[38,108],[52,110])],
+  lunge:[STAND, P([62,40],[62,52],[60,82],[82,86],[82,110],[64,66],[68,80],[50,106],[30,108])],
+  plank:[P([20,86],[30,90],[72,94],[92,100],[110,106],[30,110],[44,110]), P([20,84],[30,88],[72,90],[92,99],[110,106],[30,110],[44,110])],
+  pull:[P([60,30],[60,42],[60,74],[62,96],[60,116],[64,22],[62,4]), P([60,14],[60,26],[60,58],[62,80],[60,102],[76,26],[66,4])],
+  swing:[P([92,44],[84,50],[52,62],[58,86],[60,110],[66,74],[60,92]), P([60,20],[60,32],[60,64],[60,87],[60,110],[78,42],[96,36])],
+};
+function demoSVG(anim){
+  const [A,B] = POSES[anim] || [STAND,STAND];
+  const dur = anim==='plank' ? '3s' : '2.4s';
+  const an = (attr,a,b) => `<animate attributeName="${attr}" values="${a};${b};${a}" dur="${dur}" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>`;
+  const bone = (p,q,w,c) => `<line stroke="${c||'#39ff7a'}" stroke-width="${w}" stroke-linecap="round" x1="${A[p][0]}" y1="${A[p][1]}" x2="${A[q][0]}" y2="${A[q][1]}">${an('x1',A[p][0],B[p][0])}${an('y1',A[p][1],B[p][1])}${an('x2',A[q][0],B[q][0])}${an('y2',A[q][1],B[q][1])}</line>`;
+  const weight = ['squat','press','row','hinge','swing'].includes(anim) ? `<circle r="5" fill="#eef3f0" cx="${A.hd[0]}" cy="${A.hd[1]}">${an('cx',A.hd[0],B.hd[0])}${an('cy',A.hd[1],B.hd[1])}</circle>` : '';
+  return `<svg viewBox="-5 -8 130 128" aria-label="Demo-animation">
+    <line x1="-5" y1="111" x2="125" y2="111" stroke="#26302b" stroke-width="2"/>
+    ${bone('hp','k2',6,'#1a7a3e')}${bone('k2','f2',6,'#1a7a3e')}
+    ${bone('n','hp',7)}${bone('hp','k',6)}${bone('k','f',6)}${bone('n','el',5)}${bone('el','hd',5)}
+    <circle r="8" fill="#0e1310" stroke="#39ff7a" stroke-width="4" cx="${A.h[0]}" cy="${A.h[1]}">${an('cx',A.h[0],B.h[0])}${an('cy',A.h[1],B.h[1])}</circle>
+    ${weight}</svg>`;
+}
+
+/* ============================== ROUTING / RENDER ============================== */
+let view = 'home';
+const ICONS = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>',
+  programs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>',
+  progress:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>',
+  profile:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+};
+function go(v){ view = v; window.scrollTo(0,0); render() }
+function render(){
+  const nav = $('#tabs .in');
+  const inWorkout = view === 'workout';
+  $('#tabs').style.display = inWorkout ? 'none' : '';
+  nav.innerHTML = [['home','Hjem'],['programs','Programmer'],['progress','Fremgang'],['profile','Profil']]
+    .map(([k,l]) => `<button class="${view===k?'on':''}" onclick="go('${k}')">${ICONS[k]}${l}</button>`).join('');
+  const app = $('#app');
+  if(auth.mode === 'loading' && !S.profile.onboarded){ app.innerHTML = `<div class="wrap" style="text-align:center;padding-top:30vh"><div class="logo">L<span>Ø</span>FT</div><p class="mut">Logger ind…</p></div>`; return }
+  if(!S.profile.onboarded) return renderOnboarding(app);
+  ({home:renderHome, programs:renderPrograms, progress:renderProgress, profile:renderProfile, workout:renderWorkout})[view](app);
+  renderRestBar();
+}
+function acctChip(){
+  if(auth.mode === 'cloud'){ const ini = (auth.name||'?').trim().charAt(0).toUpperCase() || '✓';
+    return `<button class="acct" onclick="go('profile')"><span class="av">${esc(ini)}</span><span id="syncdot" class="dot ${syncState==='ok'?'ok':'warn'}"></span>Gemt</button>` }
+  if(auth.mode === 'loading') return `<span class="acct"><span class="dot"></span>Logger ind…</span>`;
+  if(!inHost) return `<button class="acct" onclick="go('profile')"><span class="av">📱</span><span class="dot ok"></span>Gemt</button>`;
+  return `<button class="acct" onclick="go('profile')"><span class="av">?</span><span class="dot warn"></span>Kun lokalt</button>`;
+}
+
+/* ---------- Onboarding ---------- */
+let ob = {step:0, loc:'Hjemme'};
+function renderOnboarding(app){
+  const login = auth.mode === 'cloud'
+    ? `<div class="card row"><span class="dot ok"></span><div><b>Logget ind${auth.name ? ' som ' + esc(auth.name) : ''}</b><div class="small mut">Dine træninger gemmes på din konto og følger dig på alle enheder.</div></div></div>`
+    : !inHost ? `<div class="card row"><span class="dot ok"></span><div><b>Dine data gemmes på denne telefon</b><div class="small mut">Ingen konto nødvendig. Tip: Gem LØFT på din hjemmeskærm, så den åbner som en rigtig app.</div></div></div>`
+    : `<div class="card row"><span class="dot warn"></span><div><b>Ikke logget ind</b><div class="small mut">Log ind på claude.ai og åbn appen igen for at gemme i skyen. Indtil da gemmes data kun på denne enhed.</div></div></div>`;
+  app.innerHTML = `<div class="wrap" style="padding-top:40px">
+    <div class="logo" style="font-size:54px">L<span>Ø</span>FT</div>
+    <h2 style="margin-top:6px">Styrketræning for begyndere</h2>
+    <p class="mut">Færdige 4-ugers programmer, 3 dage om ugen. Appen husker dine vægte og fortæller dig, hvornår du skal løfte tungere.</p>
+    ${login}
+    <h3 style="margin-top:22px">Hvor træner du?</h3>
+    <div class="grid2">
+      <button class="btn ${ob.loc==='Hjemme'?'pri':''}" onclick="ob.loc='Hjemme';render()">🏠 Hjemme</button>
+      <button class="btn ${ob.loc==='Fitnesscenter'?'pri':''}" onclick="ob.loc='Fitnesscenter';render()">🏋️ Fitness</button>
+    </div>
+    <p class="small mut" style="margin-top:12px">${ob.loc==='Hjemme' ? 'Du starter med <b class="neon">Kom i gang – Hjemme</b> (gratis). Ingen udstyr nødvendigt.' : 'Gratis-versionen inkluderer <b class="neon">Kom i gang – Hjemme</b>, som også kan laves i fitnesscentret. Med Premium får du <b>Fitness Basis</b> og <b>Fitness Maskiner</b>.'}</p>
+    <button class="btn pri block" style="margin-top:18px" onclick="finishOnboarding()">Kom i gang</button>
+  </div>`;
+}
+function finishOnboarding(){ setTimeout(()=>showInstall(),1500); S.profile.onboarded = true; S.profile.location = ob.loc; save(); go('home'); if(ob.loc==='Fitnesscenter') setTimeout(()=>openPaywall('Fitness-programmer'), 400) }
+
+/* ---------- Hjem ---------- */
+function renderHome(app){
+  const p = prog(S.profile.activeProgram) || PROGRAMS[0];
+  const idx = progressOf(p.id), done = idx >= TOTAL;
+  const day = p.days[idx % PER_WEEK], week = Math.floor(idx / PER_WEEK) + 1;
+  const weekLogs = S.logs.filter(l => (Date.now() - new Date(l.d)) < 7*864e5).length;
+  const streak = weekStreak();
+  const last = S.logs[S.logs.length-1];
+  app.innerHTML = `<div class="wrap">
+    <div class="top"><div class="logo">L<span>Ø</span>FT</div>${acctChip()}</div>
+    ${S.current ? `<div class="card" style="border-color:var(--neon)"><h3>Træning i gang</h3><p class="mut small">${esc(prog(S.current.p).name)} · ${esc(prog(S.current.p).days[S.current.idx%3].n)}</p><button class="btn pri block" onclick="go('workout')">Fortsæt træning</button></div>` : ''}
+    <div class="card">
+      <div class="row between"><span class="pill">${esc(p.loc)}</span><span class="small mut">Uge ${Math.min(week,WEEKS)} af ${WEEKS}</span></div>
+      <h2 style="margin-top:10px">${esc(p.name)}</h2>
+      <div class="weeks">${Array.from({length:TOTAL},(_,i)=>`<i class="${i<idx?'d':i===idx?'n':''}"></i>`).join('')}</div>
+      ${done ? `<p><b class="neon">Program gennemført! 🎉</b> Godt gået. Start forfra med tungere vægte eller vælg et nyt program.</p>
+        <button class="btn pri block" onclick="restartProgram()">Start forfra</button>` : `
+      <p class="mut" style="margin:6px 0 4px">Næste træning</p>
+      <h3>${esc(day.n)} · ${day.ex.length} øvelser</h3>
+      <p class="small mut" style="margin-top:0">${day.ex.map(e=>esc(EX[resolve(e.id)].n)).join(' · ')}</p>
+      ${S.current ? '' : `<button class="btn pri block" onclick="startWorkout()">▶ Start træning</button>`}`}
+    </div>
+    <div class="grid2">
+      <div class="stat"><span class="small mut">Denne uge</span><b>${weekLogs} / 3</b></div>
+      <div class="stat"><span class="small mut">Uger i træk</span><b>${streak} 🔥</b></div>
+      <div class="stat"><span class="small mut">Træninger i alt</span><b>${S.logs.length}</b></div>
+      <div class="stat"><span class="small mut">Sidste træning</span><b style="font-size:18px">${last ? dk(last.d) : '–'}</b></div>
+    </div>
+    ${!isPremium() ? `<div class="card" style="background:linear-gradient(135deg,#132219,#171c19)"><h3>Prøv <span class="neon">LØFT Premium</span></h3><p class="small mut">Alle programmer, tilpasning til dit udstyr og mål, statistik og eksport.</p><button class="btn block" onclick="openPaywall()">Se Premium – fra 29 kr./md.</button></div>` : ''}
+  </div>`;
+}
+function weekStreak(){
+  if(!S.logs.length) return 0;
+  const wk = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x.getTime() };
+  const set = new Set(S.logs.map(l => wk(l.d)));
+  let n = 0, cur = wk(new Date());
+  if(!set.has(cur)) cur -= 7*864e5;
+  while(set.has(cur)){ n++; cur -= 7*864e5 }
+  return n;
+}
+function restartProgram(){ S.profile.progress[S.profile.activeProgram] = 0; save(); render() }
+
+/* ---------- Programmer ---------- */
+function renderPrograms(app){
+  app.innerHTML = `<div class="wrap">
+    <div class="top"><h1>Programmer</h1>${acctChip()}</div>
+    <p class="mut">Alle programmer varer 4 uger med 3 træninger om ugen. Tryk for at se øvelserne.</p>
+    ${PROGRAMS.map(p => { const locked = !p.free && !isPremium(), act = S.profile.activeProgram===p.id, idx = progressOf(p.id);
+      return `<div class="card prog ${act?'active':''}" onclick="openProgram('${p.id}')">
+        <div class="row between"><div class="row"><span class="pill">${p.loc}</span>${p.free ? '<span class="pill">Gratis</span>' : locked ? '<span class="pill lock">🔒 Premium</span>' : ''}</div>${act ? '<span class="small neon"><b>Aktiv</b></span>' : ''}</div>
+        <h3 style="margin-top:10px">${esc(p.name)}</h3>
+        <p class="small mut" style="margin:0">${esc(p.desc)}</p>
+        <p class="small" style="margin:8px 0 0">🧰 ${esc(p.equip)}${idx ? ` · <span class="neon">${idx}/${TOTAL} træninger</span>` : ''}</p>
+      </div>` }).join('')}
+  </div>`;
+}
+function openProgram(id){
+  const p = prog(id), locked = !p.free && !isPremium();
+  modal(`<div class="row between"><span class="pill">${p.loc}</span><button class="btn sm ghost" onclick="closeModal()">Luk</button></div>
+    <h2 style="margin-top:10px">${esc(p.name)}</h2><p class="mut">${esc(p.desc)}</p>
+    ${p.days.map(d => `<div class="card"><h3>${d.n}</h3>${d.ex.map(e => { const r = resolve(e.id), ex = EX[r];
+      return `<div class="row between" style="padding:8px 0;border-top:1px solid var(--line);cursor:pointer" onclick="showExercise('${r}')"><span>${esc(ex.n)}${r!==e.id?' <span class="pill" title="Tilpasset dit udstyr">tilpasset</span>':''}</span><span class="mut small">${e.s} × ${targetReps(r,e.r)} ${ex.t==='s'?'sek':''} ▸</span></div>` }).join('')}</div>`).join('')}
+    ${locked ? `<button class="btn pri block" onclick="closeModal();openPaywall('${esc(p.name)}')">🔒 Lås op med Premium</button>`
+      : S.profile.activeProgram===id ? `<button class="btn block" disabled>Aktivt program</button>`
+      : `<button class="btn pri block" onclick="setActive('${id}')">Vælg dette program</button>`}`);
+}
+function setActive(id){
+  if(S.current){ S.current = null; stopRest() }
+  S.profile.activeProgram = id; save(); closeModal(); toast('Program valgt ✓'); go('home');
+}
+
+/* ---------- Øvelse (video/demo) ---------- */
+function showExercise(id){
+  const ex = EX[id], h = history(id);
+  const best = h.length ? (ex.t==='w' ? fmtKg(Math.max(...h.flatMap(x=>x.sets.map(s=>s.w)))) + ' kg' : Math.max(...h.flatMap(x=>x.sets.map(s=>s.r))) + ' ' + unit(ex)) : '–';
+  modal(`<div class="row between"><h2 style="margin:0">${esc(ex.n)}</h2><button class="btn sm ghost" onclick="closeModal()">Luk</button></div>
+    <div class="demo" style="margin-top:12px"><span class="badge">▶ DEMO</span>${demoSVG(ex.a)}</div>
+    <ol class="cue">${ex.cue.map(c=>`<li>${esc(c)}</li>`).join('')}</ol>
+    <div class="grid2"><div class="stat"><span class="small mut">Udstyr</span><b style="font-size:15px;color:var(--txt)">${ex.needs.length ? ex.needs.map(n=>EQ[n]).join(', ') : 'Intet'}</b></div>
+    <div class="stat"><span class="small mut">Din rekord</span><b style="font-size:20px">${best}</b></div></div>`);
+}
+
+/* ---------- Træning ---------- */
+function startWorkout(){
+  const p = prog(S.profile.activeProgram), idx = progressOf(p.id), day = p.days[idx % PER_WEEK];
+  S.current = {p:p.id, idx, start:Date.now(), ex: day.ex.map(e => {
+    const id = resolve(e.id), target = targetReps(id, e.r), sg = suggest(id, target);
+    return {id, orig:e.id, target, note:sg.note, cls:sg.cls, sets:Array.from({length:e.s}, () => ({w:sg.w, r:sg.r, done:false}))};
+  })};
+  save(); go('workout');
+}
+function renderWorkout(app){
+  const c = S.current; if(!c){ view='home'; return render() }
+  const p = prog(c.p), day = p.days[c.idx % PER_WEEK];
+  const doneSets = c.ex.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0), allSets = c.ex.reduce((a,e)=>a+e.sets.length,0);
+  app.innerHTML = `<div class="wrap" style="padding-bottom:150px">
+    <div class="row between"><button class="btn sm ghost" onclick="go('home')">← Tilbage</button><span class="small mut">Uge ${Math.floor(c.idx/3)+1} · ${day.n}</span></div>
+    <h1 style="margin-top:10px">${esc(p.name)}</h1>
+    <div class="ring"><i style="width:${allSets?doneSets/allSets*100:0}%"></i></div>
+    ${c.ex.map((e,i) => { const ex = EX[e.id];
+      return `<div class="ex">
+        <div class="hd"><div><h3 style="margin:0">${esc(ex.n)}</h3><span class="small mut">${e.sets.length} sæt × ${e.target} ${ex.t==='s'?'sek':'gent.'} · pause ${restFor(e.id)} sek</span></div>
+          <button class="btn sm" onclick="showExercise('${e.id}')">▶ Video</button></div>
+        <div class="sug ${e.cls}">${esc(e.note)}</div>
+        <div class="lbl"><span>Sæt</span><span>${ex.t==='w'?'Kg':''}</span><span>${ex.t==='s'?'Sek':'Gent.'}</span><span></span></div>
+        ${e.sets.map((s,j) => `<div class="set ${s.done?'done':''}">
+          <span class="n">${j+1}</span>
+          ${ex.t==='w' ? stepper(i,j,'w',s.w) : '<span></span>'}
+          ${stepper(i,j,'r',s.r)}
+          <button class="chk" aria-label="Sæt færdigt" onclick="toggleSet(${i},${j})">${ICONS.check}</button>
+        </div>`).join('')}
+      </div>` }).join('')}
+    <button class="btn pri block" onclick="finishWorkout()" style="margin-top:10px">✓ Afslut træning</button>
+    <button class="btn ghost block" onclick="cancelWorkout()" style="margin-top:10px">Annullér træning</button>
+  </div>`;
+}
+function stepper(i,j,k,v){
+  return `<div class="stepper"><button onclick="step(${i},${j},'${k}',-1)">−</button><input type="number" inputmode="decimal" value="${k==='w'?fmtKg(v).replace(',','.'):v}" onchange="setVal(${i},${j},'${k}',this.value)"><button onclick="step(${i},${j},'${k}',1)">+</button></div>`;
+}
+function step(i,j,k,d){
+  const e = S.current.ex[i], ex = EX[e.id], s = e.sets[j];
+  const inc = k==='w' ? ex.inc : (ex.t==='s' ? 5 : 1);
+  s[k] = Math.max(0, Math.round((s[k] + d*inc)*10)/10);
+  // ændring i første sæt følger med til de næste ikke-færdige sæt
+  if(j===0) e.sets.forEach((x,n)=>{ if(n>0 && !x.done) x[k] = s[k] });
+  save(); render();
+}
+function setVal(i,j,k,v){ const n = parseFloat(String(v).replace(',','.')); if(!isNaN(n)){ S.current.ex[i].sets[j][k] = Math.max(0,n); save() } render() }
+function toggleSet(i,j){
+  ensureAudio();
+  const e = S.current.ex[i], s = e.sets[j];
+  s.done = !s.done; save();
+  if(s.done){
+    const last = i === S.current.ex.length-1 && e.sets.every(x=>x.done);
+    if(!last) startRest(restFor(e.id));
+    if(navigator.vibrate) try{ navigator.vibrate(30) }catch(_){}
+  }
+  render();
+}
+function cancelWorkout(){
+  modal(`<h2>Annullér træning?</h2><p class="mut">Dine registrerede sæt i dag bliver ikke gemt.</p>
+    <div class="grid2"><button class="btn" onclick="closeModal()">Fortsæt</button><button class="btn" style="border-color:var(--bad);color:var(--bad)" onclick="S.current=null;stopRest();save();closeModal();go('home')">Annullér</button></div>`);
+}
+function finishWorkout(){
+  const c = S.current;
+  const ex = c.ex.map(e => ({id:e.id, target:e.target, sets:e.sets.filter(s=>s.done).map(s=>({w:s.w, r:s.r}))})).filter(e=>e.sets.length);
+  if(!ex.length){ toast('Markér mindst ét sæt som færdigt ✓'); return }
+  const log = {id:uid(), d:today(), p:c.p, idx:c.idx, min:Math.round((Date.now()-c.start)/60000), ex};
+  S.logs.push(log);
+  S.profile.progress[c.p] = Math.min(TOTAL, c.idx + 1);
+  S.current = null; stopRest();
+  save(); saveLog(log);
+  // opsummering
+  const ups = ex.filter(e => { const x = EX[e.id]; return e.sets.every(s=>s.r>=e.target) }).map(e=>EX[e.id].n);
+  const vol = ex.reduce((a,e)=>a+e.sets.reduce((b,s)=>b+s.w*s.r,0),0);
+  go('home');
+  modal(`<div style="text-align:center"><div class="big neon">💪</div><h2 style="margin-top:10px">Godt gået!</h2>
+    <p class="mut">Træning ${log.idx+1} af ${TOTAL} gennemført${log.min?` på ${log.min} min`:''}.</p></div>
+    <div class="grid2"><div class="stat"><span class="small mut">Sæt</span><b>${ex.reduce((a,e)=>a+e.sets.length,0)}</b></div><div class="stat"><span class="small mut">Løftet i alt</span><b>${Math.round(vol)} kg</b></div></div>
+    ${ups.length ? `<div class="card"><b class="neon">Klar til at øge næste gang:</b><p class="small" style="margin:6px 0 0">${ups.map(esc).join(', ')}</p></div>` : ''}
+    <button class="btn pri block" onclick="closeModal()">Fedt!</button>`);
+}
+
+/* ---------- Pausetimer ---------- */
+let rest = null, restInt = null, audioCtx = null;
+function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume() }catch(e){} }
+function beep(f=880, d=.15, when=0){ if(!audioCtx || !S.profile.sound) return; try{ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=f; o.connect(g); g.connect(audioCtx.destination); const t=audioCtx.currentTime+when; g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+d); o.start(t); o.stop(t+d) }catch(e){} }
+function startRest(sec){ rest = {end:Date.now()+sec*1000, total:sec, warned:false}; clearInterval(restInt); restInt = setInterval(tickRest, 250); openRestSheet() }
+function stopRest(){ rest = null; clearInterval(restInt); renderRestBar(); const el = $('#restsheet'); if(el) closeModal() }
+function restLeft(){ return rest ? Math.max(0, Math.ceil((rest.end - Date.now())/1000)) : 0 }
+const mmss = s => Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+function tickRest(){
+  if(!rest) return;
+  const l = restLeft();
+  if(l <= 3 && l > 0 && !rest['w'+l]){ rest['w'+l] = 1; beep(660,.1) }
+  if(l === 0){ beep(990,.25); beep(990,.35,.3); if(navigator.vibrate) try{ navigator.vibrate([200,100,200]) }catch(_){}; stopRest(); toast('Pausen er slut – næste sæt! 💪'); return }
+  const t = $('#restT'); if(t){ t.textContent = mmss(l); $('#restR').style.width = (l/rest.total*100)+'%' }
+  renderRestBar();
+}
+function adjRest(d){ if(!rest) return; rest.end += d*1000; rest.total = Math.max(rest.total, restLeft()); tickRest() }
+function openRestSheet(){
+  modal(`<div class="timer" id="restsheet"><p class="mut" style="margin:0">PAUSE</p><div class="t" id="restT">${mmss(restLeft())}</div>
+    <div class="ring"><i id="restR" style="width:100%"></i></div>
+    <div class="grid2"><button class="btn" onclick="adjRest(-15)">−15 sek</button><button class="btn" onclick="adjRest(15)">+15 sek</button></div>
+    <button class="btn pri block" style="margin-top:10px" onclick="stopRest()">Spring over</button>
+    <button class="btn ghost block" style="margin-top:10px" onclick="closeModal();renderRestBar()">Skjul</button></div>`);
+}
+function renderRestBar(){
+  const b = $('#restbar');
+  if(!rest || $('#restsheet')){ b.innerHTML=''; return }
+  b.innerHTML = `<div class="restbar" style="bottom:${view==='workout'?16:88}px"><div class="in" onclick="openRestSheet()"><span>⏱ Pause</span><b>${mmss(restLeft())}</b></div></div>`;
+}
+
+/* ---------- Fremgang ---------- */
+let chartEx = null;
+function exercisesLogged(){ const set = new Set(); S.logs.forEach(l=>l.ex.forEach(e=>set.add(e.id))); return [...set] }
+function renderProgress(app){
+  const ids = exercisesLogged();
+  if(!chartEx || !ids.includes(chartEx)) chartEx = ids[0];
+  app.innerHTML = `<div class="wrap">
+    <div class="top"><h1>Fremgang</h1>${acctChip()}</div>
+    ${!ids.length ? `<div class="card"><p>Ingen træninger endnu. Gennemfør din første træning – så tegner vi din fremgang her.</p><button class="btn block" onclick="loadDemo()">Vis med eksempeldata</button></div>` : `
+    <div class="card"><label class="small mut">Øvelse</label>
+      <select onchange="chartEx=this.value;render()" style="margin-top:6px">${ids.map(i=>`<option value="${i}" ${i===chartEx?'selected':''}>${esc(EX[i].n)}</option>`).join('')}</select>
+      <h3 style="margin:14px 0 4px">${EX[chartEx].t==='w' ? 'Tungeste sæt (kg)' : EX[chartEx].t==='s' ? 'Længste hold (sek)' : 'Flest gentagelser'}</h3>
+      <canvas id="ch1" height="220"></canvas>
+      ${(() => { const h = history(chartEx), ex = EX[chartEx]; if(h.length<2) return '<p class="small mut">Log mindst to træninger for at se en kurve.</p>';
+        const f = x => ex.t==='w' ? Math.max(...x.sets.map(s=>s.w)) : Math.max(...x.sets.map(s=>s.r));
+        const d = f(h[h.length-1]) - f(h[0]); return `<p class="small">Siden start: <b class="neon">${d>=0?'+':''}${ex.t==='w'?fmtKg(d)+' kg':d+' '+unit(ex)}</b> på ${h.length} træninger</p>` })()}
+    </div>
+    <div class="card"><h3>Seneste træninger</h3>${S.logs.slice(-5).reverse().map(l => `<div class="list-log"><div class="row between"><b>${dk(l.d)}</b><span class="small mut">${esc(prog(l.p)?.name||'')} · ${prog(l.p)?.days[l.idx%3].n||''}</span></div>
+      <div class="small mut">${l.ex.map(e=>`${esc(EX[e.id].n)}: ${e.sets.map(s=>EX[e.id].t==='w'?`${fmtKg(s.w)}×${s.r}`:s.r).join(', ')}`).join('<br>')}</div></div>`).join('')}</div>
+    <div class="${isPremium()?'':'locked'}">
+      <div class="${isPremium()?'':'blur'}">${statsHTML()}</div>
+      ${isPremium() ? '' : `<div class="veil"><span class="pill lock">🔒 Premium</span><h3>Statistik & eksport</h3><p class="small mut" style="margin:0">Volumen pr. uge, personlige rekorder og eksport af alle dine data.</p><button class="btn pri" onclick="openPaywall('Statistik')">Lås op</button></div>`}
+    </div>`}
+  </div>`;
+  if(ids.length){ drawLine($('#ch1'), history(chartEx).map(x => ({x:x.d, y: EX[chartEx].t==='w' ? Math.max(...x.sets.map(s=>s.w)) : Math.max(...x.sets.map(s=>s.r))}))); if(isPremium()) drawBars($('#ch2'), weeklyVolume()) }
+}
+const anyKg = () => S.logs.some(l=>l.ex.some(e=>EX[e.id].t==='w'));
+function weeklyVolume(){
+  const out = [], kg = anyKg();
+  for(let i=7;i>=0;i--){
+    const end = Date.now() - i*7*864e5, start = end - 7*864e5;
+    const v = S.logs.filter(l => { const t = new Date(l.d).getTime(); return t > start && t <= end }).reduce((a,l)=>a+l.ex.reduce((b,e)=>b+e.sets.reduce((c,s)=>c+(kg ? (EX[e.id].t==='w'?s.w*s.r:0) : (EX[e.id].t==='bw'?s.r:0)),0),0),0);
+    out.push({x: i===0 ? 'Nu' : '-'+i, y:Math.round(v)});
+  }
+  return out;
+}
+function prs(){
+  return exercisesLogged().map(id => { const ex = EX[id], h = history(id);
+    if(ex.t==='w'){ let best = 0, e1 = 0; h.forEach(x=>x.sets.forEach(s=>{ best = Math.max(best,s.w); e1 = Math.max(e1, s.w*(1+s.r/30)) })); return {n:ex.n, v:fmtKg(best)+' kg', s:'est. 1RM '+fmtKg(Math.round(e1*2)/2)+' kg'} }
+    const b = Math.max(...h.flatMap(x=>x.sets.map(s=>s.r))); return {n:ex.n, v:b+' '+unit(ex), s:''} });
+}
+function statsHTML(){
+  const vol = S.logs.reduce((a,l)=>a+l.ex.reduce((b,e)=>b+e.sets.reduce((c,s)=>c+(EX[e.id].t==='w'?s.w*s.r:0),0),0),0);
+  const sets = S.logs.reduce((a,l)=>a+l.ex.reduce((b,e)=>b+e.sets.length,0),0);
+  const mins = S.logs.reduce((a,l)=>a+(l.min||0),0);
+  return `<div class="card"><h3>Statistik</h3>
+    <div class="grid2"><div class="stat"><span class="small mut">Total volumen</span><b>${Math.round(vol).toLocaleString('da-DK')} kg</b></div>
+    <div class="stat"><span class="small mut">Sæt i alt</span><b>${sets}</b></div>
+    <div class="stat"><span class="small mut">Træningstid</span><b>${String(Math.round(mins/60*10)/10).replace('.',',')} t</b></div>
+    <div class="stat"><span class="small mut">Gns. pr. uge</span><b>${(S.logs.length / Math.max(1, Math.ceil((Date.now()-new Date(S.logs[0]?.d||Date.now()))/(7*864e5)))).toFixed(1).replace('.',',')}</b></div></div>
+    <h3 style="margin-top:16px">${anyKg() ? 'Volumen pr. uge (kg)' : 'Gentagelser pr. uge'}</h3><canvas id="ch2" height="180"></canvas>
+    <h3 style="margin-top:16px">Personlige rekorder 🏆</h3>
+    ${prs().map(p=>`<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><span>${esc(p.n)}<br><span class="small mut">${p.s}</span></span><b class="neon">${p.v}</b></div>`).join('')}
+    <h3 style="margin-top:16px">Eksport</h3>
+    <div class="grid2"><button class="btn sm" onclick="exportData('csv')">CSV (regneark)</button><button class="btn sm" onclick="exportData('json')">JSON (backup)</button></div>
+  </div>`;
+}
+function exportData(kind){
+  if(!isPremium()) return openPaywall('Eksport');
+  let txt;
+  if(kind==='csv'){ const rows = [['dato','program','dag','øvelse','sæt','kg','gentagelser/sek']];
+    S.logs.forEach(l=>l.ex.forEach(e=>e.sets.forEach((s,i)=>rows.push([l.d.slice(0,10), prog(l.p)?.name||l.p, (l.idx%3)+1, EX[e.id].n, i+1, s.w, s.r]))));
+    txt = rows.map(r=>r.map(c=>/[;,"\n]/.test(String(c)) ? '"'+String(c).replace(/"/g,'""')+'"' : c).join(';')).join('\n') }
+  else txt = JSON.stringify({profile:S.profile, logs:S.logs}, null, 1);
+  const fname = 'loft-' + new Date().toISOString().slice(0,10) + '.' + kind;
+  modal(`<div class="row between"><h2 style="margin:0">Eksport (${kind.toUpperCase()})</h2><button class="btn sm ghost" onclick="closeModal()">Luk</button></div>
+    <p class="small mut">Gem som fil eller kopiér og indsæt i fx Excel/Google Sheets.</p>
+    <textarea id="exp" readonly>${esc(txt)}</textarea>
+    <div class="grid2" style="margin-top:10px"><button class="btn pri" id="dlBtn">⬇ Gem fil</button><button class="btn" onclick="copyExp()">Kopiér</button></div>`);
+  $('#dlBtn').onclick = async () => {
+    try{ const dl = window.claude && await window.claude.use('downloads'); if(!dl) throw 0;
+      await dl.save({filename:fname, data:new Blob([txt],{type: kind==='csv'?'text/csv':'application/json'})}); toast('Fil gemt ✓') }
+    catch(e){ try{ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt],{type:'text/plain'})); a.download = fname; document.body.appendChild(a); a.click(); a.remove(); toast('Fil gemt ✓') }catch(_){ toast('Download er ikke tilgængelig her – brug Kopiér') } }
+  };
+}
+async function copyExp(){ try{ await navigator.clipboard.writeText($('#exp').value); toast('Kopieret ✓') }catch(e){ $('#exp').select(); toast('Markeret – tryk kopiér') } }
+
+function setupCanvas(cv){ const dpr = window.devicePixelRatio||1, w = cv.clientWidth, h = +cv.getAttribute('height'); cv.width = w*dpr; cv.height = h*dpr; cv.style.height = h+'px'; const c = cv.getContext('2d'); c.scale(dpr,dpr); return [c,w,h] }
+function drawLine(cv, pts){
+  if(!cv) return; const [c,w,h] = setupCanvas(cv);
+  if(!pts.length) return;
+  const pad = {l:40,r:12,t:14,b:28}, ys = pts.map(p=>p.y);
+  let mn = Math.min(...ys), mx = Math.max(...ys); if(mn===mx){ mn -= 1; mx += 1 } const span = mx-mn; mn -= span*.1; mx += span*.1;
+  const X = i => pad.l + (pts.length===1 ? (w-pad.l-pad.r)/2 : i*(w-pad.l-pad.r)/(pts.length-1)), Y = v => pad.t + (1-(v-mn)/(mx-mn))*(h-pad.t-pad.b);
+  c.font = '600 11px Inter'; c.fillStyle = '#8c9a93'; c.strokeStyle = '#26302b'; c.lineWidth = 1;
+  for(let i=0;i<=3;i++){ const v = mn + (mx-mn)*i/3, y = Y(v); c.beginPath(); c.moveTo(pad.l,y); c.lineTo(w-pad.r,y); c.stroke(); c.fillText(fmtKg(Math.round(v*10)/10), 4, y+4) }
+  const step = Math.ceil(pts.length/5); pts.forEach((p,i)=>{ if(i%step===0 || i===pts.length-1) c.fillText(dk(p.x), Math.min(X(i)-14, w-46), h-8) });
+  const g = c.createLinearGradient(0,pad.t,0,h-pad.b); g.addColorStop(0,'rgba(57,255,122,.35)'); g.addColorStop(1,'rgba(57,255,122,0)');
+  c.beginPath(); pts.forEach((p,i)=> i ? c.lineTo(X(i),Y(p.y)) : c.moveTo(X(i),Y(p.y))); c.lineTo(X(pts.length-1),h-pad.b); c.lineTo(X(0),h-pad.b); c.fillStyle = g; c.fill();
+  c.beginPath(); pts.forEach((p,i)=> i ? c.lineTo(X(i),Y(p.y)) : c.moveTo(X(i),Y(p.y))); c.strokeStyle = '#39ff7a'; c.lineWidth = 3; c.lineJoin='round'; c.shadowColor='#39ff7a'; c.shadowBlur=10; c.stroke(); c.shadowBlur=0;
+  pts.forEach((p,i)=>{ c.beginPath(); c.arc(X(i),Y(p.y),4,0,7); c.fillStyle='#0b0d0c'; c.fill(); c.strokeStyle='#39ff7a'; c.lineWidth=2; c.stroke() });
+}
+function drawBars(cv, pts){
+  if(!cv) return; const [c,w,h] = setupCanvas(cv);
+  const pad = {l:6,r:6,t:18,b:22}, mx = Math.max(1,...pts.map(p=>p.y)), bw = (w-pad.l-pad.r)/pts.length;
+  c.font = '600 11px Inter'; c.textAlign = 'center';
+  pts.forEach((p,i)=>{ const bh = (p.y/mx)*(h-pad.t-pad.b), x = pad.l + i*bw + bw*.15, y = h-pad.b-bh;
+    c.fillStyle = i===pts.length-1 ? '#39ff7a' : '#1f6b3b'; c.beginPath(); c.roundRect ? c.roundRect(x,y,bw*.7,Math.max(bh,2),4) : c.rect(x,y,bw*.7,Math.max(bh,2)); c.fill();
+    c.fillStyle = '#8c9a93'; c.fillText(p.x, x+bw*.35, h-6); if(p.y) c.fillText(p.y>=1000 ? (p.y/1000).toFixed(1)+'t' : p.y, x+bw*.35, y-4) });
+}
+
+/* ---------- Profil ---------- */
+function renderProfile(app){
+  const pr = isPremium();
+  app.innerHTML = `<div class="wrap">
+    <div class="top"><h1>Profil</h1>${acctChip()}</div>
+    <div class="card">
+      <h3>Konto</h3>
+      ${auth.mode==='cloud'
+        ? `<div class="row"><span class="dot ok"></span><div><b>${auth.name ? esc(auth.name) : 'Logget ind'}</b><div class="small mut">Logget ind med din Claude-konto. Træninger, program og indstillinger gemmes automatisk på din konto og synkroniseres mellem dine enheder.</div></div></div>`
+        : auth.mode==='loading' ? `<p class="mut">Logger ind…</p>`
+        : !inHost ? `<div class="row"><span class="dot ok"></span><div><b>Gemt på denne enhed</b><div class="small mut">Dine træninger gemmes automatisk i appen på denne telefon. Brug Premium-eksport (JSON) som backup.</div></div></div>
+          ${isStandalone() ? '' : `<button class="btn block" style="margin-top:12px" onclick="showInstall(true)">📲 Gem på hjemmeskærm</button>`}`
+        : `<div class="row"><span class="dot warn"></span><div><b>Ikke logget ind</b><div class="small mut">Dine data gemmes kun i denne browser. Log ind på <b>claude.ai</b> og åbn LØFT derfra, så gemmes alt på din konto. Dine lokale træninger flyttes automatisk med ved første login.</div></div></div>`}
+    </div>
+    <div class="card">
+      <div class="row between"><h3 style="margin:0">Abonnement</h3>${pr ? '<span class="pill">Premium</span>' : '<span class="pill lock">Gratis</span>'}</div>
+      ${pr ? `<p class="small mut">${S.profile.premium==='year' ? 'Årligt: 349 kr./år' : 'Månedligt: 49 kr./md.'}</p><button class="btn sm" onclick="S.profile.premium=null;save();render()">Skift til gratis (demo)</button>`
+        : `<p class="small mut">Gratis: 1 program og basislog.</p><button class="btn pri block" onclick="openPaywall()">Opgrader til Premium</button>`}
+    </div>
+    <div class="card ${pr?'':'locked'}"><div class="${pr?'':'blur'}">
+      <h3>Dit udstyr</h3><p class="small mut">Øvelser du ikke har udstyr til, bliver automatisk byttet ud med et alternativ.</p>
+      <div class="chips">${Object.entries(EQ).map(([k,n])=>`<button class="chip ${S.profile.equipment.includes(k)?'on':''}" onclick="toggleEq('${k}')">${n}</button>`).join('')}</div>
+      <h3 style="margin-top:18px">Dit mål</h3>
+      ${Object.entries(GOALS).map(([k,g])=>`<button class="btn block ${S.profile.goal===k?'pri':''}" style="margin:6px 0;flex-direction:column;align-items:flex-start;padding:10px 16px" onclick="S.profile.goal='${k}';save();render()"><span>${g.n}</span><span class="small" style="font-weight:600;opacity:.75">${g.d}</span></button>`).join('')}
+    </div>${pr ? '' : `<div class="veil"><span class="pill lock">🔒 Premium</span><h3>Tilpas til dit udstyr og mål</h3><button class="btn pri" onclick="openPaywall('Tilpasning')">Lås op</button></div>`}</div>
+    <div class="card"><h3>Indstillinger</h3>
+      <button class="btn block" onclick="S.profile.sound=!S.profile.sound;save();render()">${S.profile.sound?'🔊 Lyd ved pausetimer: Til':'🔇 Lyd ved pausetimer: Fra'}</button>
+      <button class="btn block" style="margin-top:10px" onclick="loadDemo()">Indlæs eksempeldata</button>
+      <button class="btn block" style="margin-top:10px;border-color:var(--bad);color:var(--bad)" onclick="askReset()">Slet alle mine data</button>
+    </div>
+    <p class="small mut" style="text-align:center">LØFT · Animationerne er illustrationer – tal med en fagperson ved skader eller smerter.</p>
+  </div>`;
+}
+function toggleEq(k){ const e = S.profile.equipment; S.profile.equipment = e.includes(k) ? e.filter(x=>x!==k) : [...e,k]; save(); render() }
+function askReset(){
+  modal(`<h2>Slet alle data?</h2><p class="mut">Alle træninger, fremgang og indstillinger slettes${auth.mode==='cloud'?' – også fra din konto':''}. Det kan ikke fortrydes.</p>
+    <div class="grid2"><button class="btn" onclick="closeModal()">Behold</button><button class="btn" style="border-color:var(--bad);color:var(--bad)" onclick="doReset()">Slet</button></div>`);
+}
+async function doReset(){ await deleteAllCloud(); const ob = S.profile.onboarded; S = blank(); S.profile.onboarded = ob; save(); closeModal(); toast('Data slettet'); go('home') }
+function loadDemo(){
+  const p = prog(S.profile.activeProgram), now = Date.now(), n = 9, newLogs = [];
+  const st = {};
+  for(let i=0;i<n;i++){
+    const d = new Date(now - (n-i)*2.4*864e5).toISOString(), day = p.days[i%3];
+    const ex = day.ex.map(e => { const id = resolve(e.id), x = EX[id], t = targetReps(id,e.r);
+      st[id] = st[id]===undefined ? (x.t==='w' ? x.start : t) : st[id] + (Math.random()<.75 ? x.inc : 0);
+      return {id, target:t, sets:Array.from({length:e.s},(_,k)=>({w:x.t==='w'?st[id]:0, r: x.t==='w' ? t - (k===e.s-1 && Math.random()<.2 ? 1 : 0) : st[id] - (k? 1:0)}))} });
+    newLogs.push({id:uid(), d, p:p.id, idx:i, min:30+Math.round(Math.random()*15), ex, demo:true});
+  }
+  S.logs = S.logs.concat(newLogs).sort((a,b)=>a.d<b.d?-1:1);
+  S.profile.progress[p.id] = Math.max(progressOf(p.id), n);
+  save(); newLogs.forEach(saveLog); toast('Eksempeldata indlæst'); go('progress');
+}
+
+/* ---------- Premium / paywall ---------- */
+let plan = 'year';
+function openPaywall(reason){
+  modal(`<div class="row between"><span class="pill">LØFT Premium</span><button class="btn sm ghost" onclick="closeModal()">Luk</button></div>
+    <h2 style="margin-top:12px">${reason ? esc(reason)+' kræver Premium' : 'Få mere ud af din træning'}</h2>
+    <ul class="feat"><li>Alle ${PROGRAMS.length} programmer – hjemme og i fitnesscenter</li><li>Tilpasning til dit udstyr og dit mål</li><li>Statistik: volumen, rekorder og est. 1RM</li><li>Eksport af alle data (CSV/JSON)</li></ul>
+    <div class="plan ${plan==='year'?'on':''}" onclick="plan='year';openPaywall(${reason?`'${esc(reason)}'`:''})"><span class="tag">Spar 40 %</span><div class="row between"><div><b>Årligt</b><div class="small mut">Svarer til 29 kr./md.</div></div><div class="price">349 kr.<span class="small mut">/år</span></div></div></div>
+    <div class="plan ${plan==='month'?'on':''}" onclick="plan='month';openPaywall(${reason?`'${esc(reason)}'`:''})"><div class="row between"><div><b>Månedligt</b><div class="small mut">Opsig når som helst</div></div><div class="price">49 kr.<span class="small mut">/md.</span></div></div></div>
+    <button class="btn pri block" style="margin-top:8px" onclick="buy()">Start Premium</button>
+    <p class="small mut" style="text-align:center">Demo: betaling er ikke koblet på endnu – Premium aktiveres med det samme.</p>`);
+}
+function buy(){ S.profile.premium = plan; save(); closeModal(); toast('Velkommen til Premium! 🎉'); render() }
+
+/* ---------- Modal ---------- */
+function modal(html){ $('#modal').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="sheet">${html}</div></div>`; renderRestBar() }
+function closeModal(){ $('#modal').innerHTML = ''; renderRestBar() }
+
+/* ---------- Hjemmeskærm (PWA) ---------- */
+let deferredPrompt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; showInstall() });
+window.addEventListener('appinstalled', () => { $('#installBox')?.remove(); toast('LØFT er gemt på hjemmeskærmen 🎉') });
+function showInstall(force){
+  if(isStandalone() || inHost || window.top !== window.self) return;
+  try{ if(!force && localStorage.getItem('loft_noinstall')) return }catch(e){}
+  $('#installBox')?.remove();
+  const d = document.createElement('div'); d.id = 'installBox'; d.className = 'install';
+  const ios = isIOS();
+  d.innerHTML = `<div class="row between"><b>📲 Gem LØFT på hjemmeskærmen</b><button class="btn sm ghost" style="min-height:36px" onclick="dismissInstall()">✕</button></div>
+    ${deferredPrompt ? `<p class="small mut" style="margin:6px 0 10px">Åbn LØFT som en app – fuld skærm og hurtig adgang.</p><button class="btn pri block" onclick="doInstall()">Installér app</button>`
+      : ios ? `<p class="small" style="margin:8px 0 0">1. Tryk på <b>Del</b>-ikonet <span class="neon">⬆︎</span> i Safari<br>2. Vælg <b>Føj til hjemmeskærm</b><br>3. Tryk <b>Tilføj</b></p>`
+      : `<p class="small" style="margin:8px 0 0">Åbn browserens menu <b>⋮</b> og vælg <b>Føj til startskærm</b> / <b>Installér app</b>.</p>`}`;
+  document.body.appendChild(d);
+}
+function dismissInstall(){ try{ localStorage.setItem('loft_noinstall','1') }catch(e){} $('#installBox')?.remove() }
+async function doInstall(){ if(!deferredPrompt) return; deferredPrompt.prompt(); try{ await deferredPrompt.userChoice }catch(e){} deferredPrompt = null; $('#installBox')?.remove() }
+if('serviceWorker' in navigator && location.protocol==='https:' && !inHost) navigator.serviceWorker.register('sw.js').catch(()=>{});
+setTimeout(() => { if(S.profile.onboarded && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) showInstall() }, 2500);
+
+window.addEventListener('resize', () => { if(view==='progress') render() });
+initAuth();
+</script>
+</body>
+</html>
