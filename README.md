@@ -14,7 +14,7 @@ Mobile-first web app (PWA) for young beginners (15–22). Ready-made 4-week prog
 
 ## Opsætning
 Se **SETUP.md** for måling (GoatCounter), venteliste (Tally) og login + betaling (Supabase + Stripe).
-Serverkoden ligger i `supabase/`.
+Serverkoden ligger i `supabase/` (hver funktion er én fil, der kan kopieres ind i Supabases webeditor).
 
 ## Måling (valgfri)
 Opret en gratis konto på goatcounter.com og skriv din kode i `CONFIG.goatcounterCode` i `data.js`.
