@@ -34,7 +34,7 @@ const CONFIG = {
   weeks: 4,                // programlængde i uger
   // Privatlivsvenlig måling med GoatCounter (gratis): opret en konto på goatcounter.com
   // og skriv din kode her, fx 'lift-app'. Tom = ingen måling.
-  goatcounterCode: '',
+  goatcounterCode: 'liftapp',
   // Venteliste: link til fx en gratis Tally- eller Google-formular. Tom = gem kun interesse lokalt.
   waitlistUrl: '',
   // Testknapper i Profil (slå Premium til, eksempeldata). false = skjult for brugere.
