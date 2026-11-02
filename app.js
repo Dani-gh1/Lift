@@ -846,10 +846,16 @@ function applyEntitlement(){
 }
 async function callFn(name, body){
   const {data, error} = await sb.functions.invoke(name, {body: body || {}});
-  if(error){ let code = 'server_error'; try{ code = (await error.context.json()).error || code }catch(_){} throw code }
+  if(error){
+    const st = error.context && error.context.status;
+    let code = 'server_error'; try{ code = (await error.context.json()).error || code }catch(_){}
+    if(st === 401 && code === 'server_error') code = 'not_signed_in'; // login udløbet/ugyldigt
+    if(code === 'not_signed_in'){ try{ await sb.auth.signOut() }catch(_){} acct.user = null; acct.step = 'email' }
+    throw code;
+  }
   return data;
 }
-const ERR = {not_signed_in:'Please sign in first.', already_premium:'You already have Premium.', no_customer:'No subscription found.', unknown_plan:'Unknown plan.', server_error:'Something went wrong. Please try again.'};
+const ERR = {not_signed_in:'Your sign-in has expired. Please sign in again.', already_premium:'You already have Premium.', no_customer:'No subscription found.', unknown_plan:'Unknown plan.', server_error:'Something went wrong. Please try again.'};
 async function sendCode(e){
   e && e.preventDefault();
   const m = ($('#acEmail')?.value || '').trim();

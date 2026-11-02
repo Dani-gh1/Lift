@@ -112,7 +112,9 @@ Gør dette 3 gange, én gang for hver funktion:
 3. Slet eksempelkoden, og indsæt din kopi.
 4. Skriv funktionsnavnet nederst (fx `create-checkout`), og tryk **Deploy function**.
 
-**Kun for `stripe-webhook`:** Åbn funktionen → fanen **Details** (eller *Settings*). Slå **Verify JWT / Enforce JWT verification** **FRA**, og gem. Stripe kan ikke logge ind, så her er det Stripes signatur, der beskytter funktionen.
+**For alle 3 funktioner:** Åbn funktionen → fanen **Details** (eller *Settings*). Slå **Verify JWT / Enforce JWT verification** **FRA**, og gem.
+- `create-checkout` og `customer-portal` tjekker selv, hvem brugeren er. Supabases ekstra tjek afviser ellers logins, efter du har lavet nye nøgler.
+- `stripe-webhook` beskyttes af Stripes signatur. Stripe kan ikke logge ind.
 
 Kopiér adressen på `stripe-webhook`. Den står øverst på funktionen og ser sådan ud:
 `https://xxxx.supabase.co/functions/v1/stripe-webhook`
