@@ -1,0 +1,491 @@
+/* LIFT – kerne: data, lagring, synkronisering, konto, betaling, hjælpere.
+   Skærmene ligger i train.js, food.js, stats.js og profile.js. Indstillinger og øvelser i data.js. */
+'use strict';
+
+/* ============================== IKONER ============================== */
+const IC = {
+  home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  dumbbell:'<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/>',
+  chart:'<path d="M3 20h18M6 16l4-5 3 3 5-7"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+  play:'<path d="M7 4.5v15l12-7.5z" fill="currentColor"/>',
+  pause:'<path d="M8 5v14M16 5v14"/>',
+  timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>',
+  flame:'<path d="M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 .3 2 1.3 3 2.5 3-.5-3 0-6 0-8z"/>',
+  trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8 21h8M9 17h6"/>',
+  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"/>',
+  install:'<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3M10 18.5h4"/>',
+  shield:'<path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  download:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  upload:'<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  x:'<path d="M6 6l12 12M18 6 6 18"/>',
+  chevR:'<path d="M9 6l6 6-6 6"/>', chevL:'<path d="M15 6l-6 6 6 6"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+  alert:'<path d="M12 3 2 20h20zM12 10v4M12 17v.5"/>',
+  star:'<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/>',
+  bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',
+  sprout:'<path d="M12 21v-9M12 12c0-4-3-7-8-7 0 5 3 7 8 7zM12 12c0-3 2.5-6 8-6 0 4.5-3 6-8 6z"/>',
+  building:'<path d="M4 21V5l8-3 8 3v16M9 21v-5h6v5M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01"/>',
+  swap:'<path d="M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4"/>',
+  sound:'<path d="M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
+  mute:'<path d="M4 9v6h4l5 4V5L8 9zM17 9l4 6M21 9l-4 6"/>',
+  repeat:'<path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  file:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  crown:'<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  skip:'<path d="M5 5l10 7-10 7z" fill="currentColor"/><path d="M19 5v14"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  layers:'<path d="M12 3 2 8l10 5 10-5zM2 13l10 5 10-5"/>',
+  share:'<path d="M12 3v12M7 8l5-5 5 5M5 13v7h14v-7"/>',
+  apple:'<path d="M12 7c-1-2-3-3-5-2-3 1-3 6-1 10 1 2 3 4 4 4s1.5-.6 2-.6 1 .6 2 .6 3-2 4-4c2-4 2-9-1-10-2-1-4 0-5 2zM12 7c0-2 1-4 3-4"/>',
+  scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 9v6M10 9v6M13 9v6M17 9v6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  minus:'<path d="M5 12h14"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/>',
+  scale:'<path d="M5 21h14l-2-14H7zM9 7a3 3 0 0 1 6 0M12 12l2-2"/>',
+  cloud:'<path d="M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z"/>',
+  cloudoff:'<path d="M7 18a5 5 0 0 1-1.5-9.8M10 6.5A6 6 0 0 1 19 10a4 4 0 0 1 1.5 7.3M3 3l18 18"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  dots:'<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+};
+const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
+
+/* ============================== DATA & LAGRING ==============================
+   Alt gemmes først på telefonen (virker offline). Er man logget ind, synkroniseres det med kontoen.
+   Lister (træninger, mad …) har id + u (sidst ændret), så ændringer fra flere enheder kan flettes. */
+const KEY = 'lift_v3';
+const COLLS = ['workouts','routines','customEx','food','customFoods','body'];
+const SYNC_PROFILE = ['onboarded','offerSeen','goal','sex','age','height','weight','activity','kcalGoal','proteinGoal','weeklyGoal','restDefault','sound','unit'];
+const blankProfile = () => ({onboarded:false, offerSeen:false, goal:'muscle', sex:null, age:null, height:null, weight:null, activity:1.55,
+  kcalGoal:null, proteinGoal:null, weeklyGoal:3, restDefault:90, sound:true, pu:0,
+  premium:null, lastBackup:null, interest:null, waitlist:null, flags:{}});
+const blank = () => ({profile:blankProfile(), workouts:[], routines:[], customEx:[], food:[], customFoods:[], body:[], del:{}, current:null, summary:null});
+let S = blank();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const d = JSON.parse(raw); S = Object.assign(blank(), d); S.profile = Object.assign(blankProfile(), d.profile||{}); COLLS.forEach(k => { if(!Array.isArray(S[k])) S[k] = [] }); return }
+    const old = localStorage.getItem('lift_v2') || localStorage.getItem('lift_v1');
+    if(old) migrateV2(JSON.parse(old));
+  }catch(e){ console.warn(e); S = blank() }
+}
+// Flytter træninger fra den gamle version (programmer) over i den nye træningslog
+function migrateV2(d){
+  const now = Date.now(), p = d.profile || {};
+  S.profile = Object.assign(blankProfile(), {onboarded:!!p.onboarded, sound:p.sound!==false, premium:p.premium||null, lastBackup:p.lastBackup||null,
+    waitlist:p.waitlist||null, interest:p.interest||null, flags:p.flags||{}, weeklyGoal:p.daysPerWeek||3,
+    goal:({styrke:'strength', muskler:'muscle', form:'fit'})[p.goal] || 'muscle', pu:now});
+  S.workouts = (d.logs||[]).filter(l => l && l.ex).map(l => { const end = Date.parse(l.d);
+    return {id:l.id, start:end - (l.min||30)*60000, end, name:'Workout', u:now, ex:l.ex.filter(e=>EX[e.id]).map(e => ({id:e.id, sets:e.sets.map(s => ({kg:s.w||0, reps:s.r||0, done:true}))}))} });
+  save();
+}
+function lsSave(){ try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){ toast('Could not save – is your storage full?') } }
+function save(){ lsSave(); scheduleSync() }
+const touch = o => (o.u = Date.now(), o);
+function upsert(coll, item){ touch(item); const i = S[coll].findIndex(x => x.id === item.id); if(i >= 0) S[coll][i] = item; else S[coll].push(item); save() }
+function removeItem(coll, id){ S[coll] = S[coll].filter(x => x.id !== id); S.del[id] = Date.now(); save() }
+function setProfile(k, v){ S.profile[k] = v; S.profile.pu = Date.now(); save() }
+
+/* ============================== HJÆLPERE ============================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n, d=1) => { if(n == null || isNaN(n)) return '–'; const f = Math.pow(10,d); return String(Math.round(n*f)/f) };
+const DAY = 864e5;
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const dayKey = (d = new Date()) => { const x = new Date(d); return x.getFullYear() + '-' + String(x.getMonth()+1).padStart(2,'0') + '-' + String(x.getDate()).padStart(2,'0') };
+const dk = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+const dkLong = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+const weekday = d => new Date(d).toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short'});
+const weekStart = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x.getTime() };
+const isPremium = () => { const p = S.profile.premium; if(!p) return false; if(p.until && new Date(p.until).getTime() + 3*DAY < Date.now()) return false; return true };
+const testTools = () => { try{ if(/[?&]test\b/.test(location.search)) localStorage.setItem('lift_test','1'); return CONFIG.showTestTools || localStorage.getItem('lift_test')==='1' }catch(e){ return CONFIG.showTestTools } };
+function toast(m){ document.querySelectorAll('.toast').forEach(t=>t.remove()); const t = document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(), 2400) }
+function modal(html){ $('#modal').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; const f = $('#modal .sheet input:not([type=hidden]), #modal .sheet button'); f && f.focus({preventScroll:true}) }
+function closeModal(){ if(typeof stopScanner === 'function') stopScanner(); $('#modal').innerHTML = '' }
+addEventListener('keydown', e => { if(e.key==='Escape') closeModal() });
+const closeBtn = () => `<button class="iconbtn" onclick="closeModal()" aria-label="Close">${ic('x')}</button>`;
+const lockPill = () => `<span class="pill lock">${ic('lock')} Premium</span>`;
+const legalLinks = () => `<a href="terms.html" class="neon">Terms</a> · <a href="privacy.html" class="neon">Privacy</a>`;
+function lockedCard(title, text, from){
+  return `<div class="card locked-card"><div class="row between"><h3 style="margin:0">${title}</h3>${lockPill()}</div><p class="small mut">${text}</p><button class="btn sm pri" onclick="openPremium('${from}')">${ic('crown','sm')} Unlock with Premium</button></div>`;
+}
+
+/* ============================== MÅLING (GoatCounter) ============================== */
+const gcQueue = [];
+function track(name){
+  if(!CONFIG.goatcounterCode) return;
+  const send = () => window.goatcounter.count({path:'evt-' + name, title:name, event:true});
+  if(window.goatcounter && window.goatcounter.count) send(); else gcQueue.push(name);
+}
+function trackOnce(name){ if(S.profile.flags[name]) return; S.profile.flags[name] = Date.now(); lsSave(); track(name) }
+(function initAnalytics(){
+  if(!CONFIG.goatcounterCode || location.protocol !== 'https:') return;
+  const s = document.createElement('script'); s.async = true; s.src = 'https://gc.zgo.at/count.js';
+  s.dataset.goatcounter = `https://${CONFIG.goatcounterCode}.goatcounter.com/count`;
+  s.onload = () => { const t = setInterval(()=>{ if(window.goatcounter && window.goatcounter.count){ clearInterval(t); gcQueue.splice(0).forEach(track) } }, 300) };
+  document.head.appendChild(s);
+})();
+
+/* ============================== ØVELSER ============================== */
+// Indbyggede øvelser (data.js) + brugerens egne
+function exInfo(id){ return EX[id] || S.customEx.find(x => x.id === id) || {n:'Unknown exercise', m:'Full body', t:'w'} }
+const allExercises = () => [...Object.entries(EX).map(([id,x]) => ({id, ...x})), ...S.customEx.map(x => ({...x, custom:true}))];
+const unitOf = x => x.t==='s' ? 'sec' : 'reps';
+
+/* ============================== DEMO-ANIMATIONER ==============================
+   Hver stilling (pose) har to positioner: A (start) og B (bunden af bevægelsen).
+   Leddene: h=hoved, n=nakke, hp=hofte, k/f=knæ/fod, el/hd=albue/hånd, k2/f2 = det fjerne ben. */
+const P = (h,n,hp,k,f,el,hd,k2,f2) => ({h,n,hp,k,f,el,hd,k2:k2||k,f2:f2||f});
+const STAND = P([60,20],[60,32],[60,64],[60,87],[60,110],[64,48],[68,62]);
+const POSES = {
+  squat:[P([60,20],[60,32],[60,64],[61,87],[60,110],[70,44],[82,40]), P([74,44],[68,56],[40,80],[70,84],[60,110],[80,62],[92,60])],
+  push:[P([22,62],[32,68],[74,82],[92,95],[110,106],[32,89],[32,110]), P([22,90],[34,96],[74,100],[92,104],[110,106],[50,96],[32,110])],
+  bench:[P([16,70],[28,72],[70,74],[92,76],[96,110],[29,56],[29,38]), P([16,70],[28,72],[70,74],[92,76],[96,110],[44,80],[31,62])],
+  hinge:[P([60,20],[60,32],[60,64],[60,87],[60,110],[61,48],[62,64]), P([92,44],[84,50],[52,62],[56,86],[60,110],[84,66],[84,82])],
+  press:[P([60,20],[60,32],[60,64],[60,87],[60,110],[74,40],[70,28]), P([60,20],[60,32],[60,64],[60,87],[60,110],[66,14],[62,0])],
+  row:[P([92,46],[84,52],[52,62],[56,86],[60,110],[84,70],[84,86]), P([92,46],[84,52],[52,62],[56,86],[60,110],[64,48],[74,64])],
+  invrow:[P([20,100],[31,99],[72,103],[92,106],[112,108],[33,80],[34,60]), P([22,74],[33,74],[72,88],[92,99],[112,108],[52,72],[34,60])],
+  bridge:[P([14,100],[25,101],[62,104],[86,84],[94,110],[38,108],[52,110]), P([14,100],[25,99],[62,82],[86,82],[94,110],[38,108],[52,110])],
+  lunge:[STAND, P([62,40],[62,52],[60,82],[82,86],[82,110],[64,66],[68,80],[50,106],[30,108])],
+  plank:[P([20,86],[30,90],[72,94],[92,100],[110,106],[30,110],[44,110]), P([20,84],[30,88],[72,90],[92,99],[110,106],[30,110],[44,110])],
+  pull:[P([60,30],[60,42],[60,74],[62,96],[60,112],[64,22],[62,4]), P([60,30],[60,42],[60,74],[62,96],[60,112],[76,50],[70,32])],
+  pike:[P([34,76],[44,72],[72,44],[86,76],[100,110],[40,92],[36,110]), P([36,100],[46,93],[74,50],[88,78],[100,110],[58,100],[36,110])],
+  chestpress:[P([60,20],[60,32],[60,64],[60,87],[60,110],[48,50],[64,46]), P([60,20],[60,32],[60,64],[60,87],[60,110],[76,46],[94,46])],
+  swing:[P([92,44],[84,50],[52,62],[58,86],[60,110],[66,74],[60,92]), P([60,20],[60,32],[60,64],[60,87],[60,110],[78,42],[96,36])],
+};
+// Hvilket udstyr der tegnes. Kan overskrives med vis:'...' på øvelsen i data.js
+function visOf(id){
+  const x = exInfo(id); if(x.vis) return x.vis;
+  const needs = x.needs || [];
+  if(id==='table_row') return 'table';
+  if(needs.includes('stang')) return 'barbell';
+  if(needs.includes('haandvaegte')) return 'dumbbell';
+  if(needs.includes('kettlebell')) return 'kb';
+  if(needs.includes('elastik')) return 'band';
+  if(needs.includes('maskiner')) return x.a==='pull' ? 'cable' : 'sled';
+  return '';
+}
+function demoSVG(id){
+  const x = exInfo(id), anim = x.a, vis = visOf(id);
+  const [A,B] = POSES[anim] || [STAND,STAND];
+  const dur = anim==='plank' ? '3s' : '2.6s', ks = 'calcMode="spline" keyTimes="0;.55;1" keySplines=".45 0 .55 1;.45 0 .55 1"';
+  const an = (attr,a,b) => `<animate attributeName="${attr}" values="${a};${b};${a}" dur="${dur}" repeatCount="indefinite" ${ks}/>`;
+  const mv = (pt) => `<animateTransform attributeName="transform" type="translate" values="${A[pt]};${B[pt]};${A[pt]}" dur="${dur}" repeatCount="indefinite" ${ks}/>`;
+  const bone = (p,q,w,c) => `<line stroke="${c}" stroke-width="${w}" stroke-linecap="round" x1="${A[p][0]}" y1="${A[p][1]}" x2="${A[q][0]}" y2="${A[q][1]}">${an('x1',A[p][0],B[p][0])}${an('y1',A[p][1],B[p][1])}${an('x2',A[q][0],B[q][0])}${an('y2',A[q][1],B[q][1])}</line>`;
+  const N = '#39ff7a', F = '#1d7d42';
+  // Udstyr der følger hånden
+  const atHand = {
+    barbell: `<circle r="11" fill="#0e1310" stroke="#f1f5f3" stroke-width="3"/><circle r="2.5" fill="#f1f5f3"/>`,
+    dumbbell: `<rect x="-9" y="-4" width="18" height="8" rx="3" fill="#f1f5f3"/><rect x="-11" y="-6" width="5" height="12" rx="2" fill="#f1f5f3"/><rect x="6" y="-6" width="5" height="12" rx="2" fill="#f1f5f3"/>`,
+    kb: `<circle cy="8" r="8" fill="#f1f5f3"/><path d="M-5 2 a5 5 0 0 1 10 0" fill="none" stroke="#f1f5f3" stroke-width="3"/>`,
+  }[vis];
+  const handProp = atHand ? `<g transform="translate(${A.hd})">${mv('hd')}${atHand}</g>` : '';
+  // Faste ting i rummet
+  let scene = '';
+  if(anim==='bench') scene = `<rect x="6" y="80" width="92" height="7" rx="3" fill="#2a342f"/><rect x="18" y="87" width="5" height="23" fill="#2a342f"/><rect x="82" y="87" width="5" height="23" fill="#2a342f"/>`;
+  if(vis==='table') scene = `<rect x="-4" y="54" width="70" height="6" rx="2" fill="#2a342f"/><rect x="0" y="60" width="5" height="50" fill="#2a342f"/><rect x="58" y="60" width="5" height="50" fill="#2a342f"/>`;
+  if(vis==='cable') scene = `<circle cx="62" cy="-2" r="5" fill="none" stroke="#a9b6af" stroke-width="2"/><line x1="62" y1="-2" x2="${A.hd[0]}" y2="${A.hd[1]}" stroke="#a9b6af" stroke-width="2">${an('x2',A.hd[0],B.hd[0])}${an('y2',A.hd[1],B.hd[1])}</line><rect x="40" y="${A.hd[1]-2}" width="44" height="4" rx="2" fill="#f1f5f3">${an('y',A.hd[1]-2,B.hd[1]-2)}</rect>`;
+  if(vis==='band'){ const ax = anim==='row' ? 124 : -2, ay = anim==='row' ? 70 : 50;
+    scene = `<rect x="${ax-3}" y="${ay-10}" width="6" height="20" rx="2" fill="#2a342f"/><line x1="${ax}" y1="${ay}" x2="${A.hd[0]}" y2="${A.hd[1]}" stroke="#ffcc33" stroke-width="3" stroke-dasharray="5 3">${an('x2',A.hd[0],B.hd[0])}${an('y2',A.hd[1],B.hd[1])}</line>` }
+  if(vis==='sled') scene = `<rect x="84" y="20" width="8" height="70" rx="3" fill="#2a342f" transform="rotate(-20 88 55)"/>`;
+  // Pil der viser retningen (op/ned eller frem/tilbage)
+  const dxh = B.hd[0]-A.hd[0], dyh = B.hd[1]-A.hd[1];
+  const vert = Math.abs(dyh) || Math.abs(dxh) ? Math.abs(dyh) >= Math.abs(dxh) : Math.abs(B.hp[1]-A.hp[1]) >= Math.abs(B.hp[0]-A.hp[0]);
+  const arrow = anim==='plank' ? '' : `<g opacity=".0" stroke="${N}" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      ${vert ? `<path d="M116 30v40M110 36l6-6 6 6M110 64l6 6 6-6"/>` : `<path d="M30 -2h50M36 -8l-6 6 6 6M74 -8l6 6-6 6"/>`}
+      <animate attributeName="opacity" values="0;.85;0" dur="${dur}" repeatCount="indefinite"/></g>`;
+  return `<svg viewBox="-8 -12 136 134" role="img" aria-label="Animation of ${esc(x.n)}">
+    <ellipse cx="60" cy="112" rx="56" ry="4" fill="#000" opacity=".45"/>
+    <line x1="-8" y1="111" x2="128" y2="111" stroke="#2a342f" stroke-width="2"/>
+    ${scene}${arrow}
+    ${bone('hp','k2',6,F)}${bone('k2','f2',6,F)}
+    <g transform="translate(4 -1)">${bone('n','el',5,F)}${bone('el','hd',5,F)}</g>
+    ${bone('n','hp',8,N)}${bone('hp','k',7,N)}${bone('k','f',7,N)}${bone('n','el',5.5,N)}${bone('el','hd',5.5,N)}
+    <circle r="8.5" fill="#0e1310" stroke="${N}" stroke-width="4" cx="${A.h[0]}" cy="${A.h[1]}">${an('cx',A.h[0],B.h[0])}${an('cy',A.h[1],B.h[1])}</circle>
+    ${handProp}</svg>`;
+}
+const tempoText = id => exInfo(id).t==='s' ? 'Hold still and breathe calmly.' : exInfo(id).a==='swing' ? 'Explode up with your hips, let the bell fall back.' : 'Lower slowly (2 sec) · push up strong (1 sec).';
+
+/* ============================== KONTO, SYNKRONISERING & BETALING (Supabase + Stripe) ============================== */
+const authEnabled = () => !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
+const payEnabled = () => authEnabled() && (CONFIG.paymentsLive || testTools());
+let sb = null;
+const acct = {ready:false, user:null, sub:null, step:'email', email:'', busy:false, offline:false, skip:false};
+const rememberUser = id => { try{ id ? localStorage.setItem('lift_uid', id) : localStorage.removeItem('lift_uid') }catch(_){} };
+const rememberedUser = () => { try{ return localStorage.getItem('lift_uid') }catch(_){ return null } };
+let syncState = 'local', syncTimer = null, syncing = false, syncAgain = false;
+
+async function initAccount(){
+  if(!authEnabled()) return;
+  try{
+    const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    sb = mod.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'implicit'}});
+    const {data} = await sb.auth.getSession();
+    acct.user = data.session?.user || null; acct.ready = true; rememberUser(acct.user?.id);
+    sb.auth.onAuthStateChange((_e, sess) => { const before = acct.user?.id; acct.user = sess?.user || null; if(acct.user?.id !== before){ rememberUser(acct.user?.id); if(acct.user){ try{ localStorage.removeItem('lift_skip') }catch(_){} } acct.step = 'email'; refreshSub(); if(acct.user){ track('signed-in'); syncNow(true) } else { syncState = 'local'; render() } } });
+    if(/[?&]signin=1/.test(location.search)){ window.history.replaceState(null, '', location.pathname + '?app'); if(acct.user) toast('Welcome to LIFT!') }
+    if(acct.user){ await syncNow(true); await refreshSub() } else render();
+    handleCheckoutReturn();
+    addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && acct.user) syncNow() });
+    addEventListener('online', () => acct.user && syncNow());
+  }catch(e){ console.warn('Account unavailable', e); acct.ready = true; acct.offline = !!rememberedUser(); render() }
+}
+
+/* --- Synkronisering: hent → flet → gem --- */
+function scheduleSync(){ if(!sb || !acct.user) return; clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(), 1500) }
+function syncPayload(){
+  const profile = {pu:S.profile.pu}; SYNC_PROFILE.forEach(k => profile[k] = S.profile[k]);
+  const out = {v:3, profile, del:S.del}; COLLS.forEach(k => out[k] = S[k]); return out;
+}
+function mergeRemote(r){
+  if(!r || typeof r !== 'object') return false;
+  let changed = false;
+  const del = Object.assign({}, r.del || {}, S.del);
+  Object.entries(r.del || {}).forEach(([id,t]) => { if(!S.del[id] || S.del[id] < t) del[id] = t });
+  S.del = del;
+  COLLS.forEach(k => {
+    const map = new Map(S[k].map(x => [x.id, x]));
+    (Array.isArray(r[k]) ? r[k] : []).forEach(x => { if(!x || !x.id) return; const l = map.get(x.id); if(!l || (x.u||0) > (l.u||0)){ map.set(x.id, x); changed = true } });
+    const list = [...map.values()].filter(x => !(del[x.id] && del[x.id] >= (x.u||0)));
+    if(list.length !== S[k].length) changed = true;
+    S[k] = list;
+  });
+  if(r.profile && (r.profile.pu||0) > (S.profile.pu||0)){ SYNC_PROFILE.forEach(k => { if(k in r.profile) S.profile[k] = r.profile[k] }); S.profile.pu = r.profile.pu; changed = true }
+  S.workouts.sort((a,b) => a.start - b.start);
+  return changed;
+}
+async function syncNow(first){
+  if(!sb || !acct.user) return;
+  if(syncing){ syncAgain = true; return }
+  syncing = true; syncState = 'syncing'; updateSyncChip();
+  try{
+    const {data, error} = await sb.from('user_data').select('data').eq('user_id', acct.user.id).maybeSingle();
+    if(error) throw error;
+    const changed = data && data.data ? mergeRemote(data.data) : false;
+    const {error:e2} = await sb.from('user_data').upsert({user_id:acct.user.id, data:syncPayload(), updated_at:new Date().toISOString()});
+    if(e2) throw e2;
+    lsSave(); syncState = 'ok';
+    if(changed || first) render(); else updateSyncChip();
+  }catch(e){ console.warn('sync', e); syncState = navigator.onLine === false ? 'offline' : 'error'; updateSyncChip() }
+  syncing = false;
+  if(syncAgain){ syncAgain = false; syncNow() }
+}
+function syncChip(){
+  const st = !acct.user ? ['cloudoff','On this device'] : syncState==='syncing' ? ['cloud','Saving…'] : syncState==='ok' ? ['cloud','Saved'] : syncState==='offline' ? ['cloudoff','Offline'] : ['cloudoff','Not saved'];
+  return `<button class="chip-save ${acct.user && syncState==='ok' ? 'ok' : ''}" id="syncChip" onclick="go('profile')" aria-label="${st[1]}">${ic(st[0])}${st[1]}</button>`;
+}
+function updateSyncChip(){ const c = $('#syncChip'); if(c) c.outerHTML = syncChip() }
+
+/* --- Abonnement --- */
+async function refreshSub(){
+  if(!sb) return;
+  if(!acct.user){ acct.sub = null; applyEntitlement(); return }
+  const {data, error} = await sb.from('subscriptions').select('status,plan,current_period_end,cancel_at_period_end').eq('user_id', acct.user.id).maybeSingle();
+  if(error) return render();
+  acct.sub = data; applyEntitlement();
+}
+function applyEntitlement(){
+  const s = acct.sub, ok = s && ['active','trialing','past_due'].includes(s.status) && (!s.current_period_end || new Date(s.current_period_end) > new Date());
+  if(ok) S.profile.premium = {source:'stripe', plan:s.plan, until:s.current_period_end, status:s.status, cancel:s.cancel_at_period_end};
+  else if(S.profile.premium && S.profile.premium.source === 'stripe') S.profile.premium = null;
+  lsSave(); render();
+}
+async function callFn(name, body){
+  const {data, error} = await sb.functions.invoke(name, {body: body || {}});
+  if(error){
+    const st = error.context && error.context.status;
+    let code = 'server_error'; try{ code = (await error.context.json()).error || code }catch(_){}
+    if(st === 401 && code === 'server_error') code = 'not_signed_in';
+    if(code === 'not_signed_in'){ try{ await sb.auth.signOut() }catch(_){} acct.user = null; acct.step = 'email' }
+    throw code;
+  }
+  return data;
+}
+const ERR = {not_signed_in:'Your sign-in has expired. Please sign in again.', already_premium:'You already have Premium.', no_customer:'No subscription found.', unknown_plan:'Unknown plan.', server_error:'Something went wrong. Please try again.'};
+
+/* --- Login med e-mail (link eller kode) --- */
+async function sendCode(e){
+  e && e.preventDefault();
+  const m = ($('#acEmail')?.value || '').trim();
+  if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
+  if(!sb) return toast('Connecting… try again in a moment');
+  acct.busy = true; render();
+  const {error} = await sb.auth.signInWithOtp({email:m, options:{shouldCreateUser:true, emailRedirectTo: location.origin + location.pathname + '?app&signin=1'}});
+  acct.busy = false;
+  if(error){ toast(error.status === 429 ? 'Too many tries. Wait a minute and try again.' : 'Could not send the email. Check your address.'); return render() }
+  acct.email = m; acct.step = 'code'; render(); setTimeout(()=>$('#acCode')?.focus(), 50);
+}
+async function verifyCode(e){
+  e && e.preventDefault();
+  const code = ($('#acCode')?.value || '').replace(/\s/g,'');
+  if(!/^\d{6,10}$/.test(code)) return toast('Enter the code from the email');
+  acct.busy = true; render();
+  const {error} = await sb.auth.verifyOtp({email:acct.email, token:code, type:'email'});
+  acct.busy = false;
+  if(error){ toast('That code did not work. Check it or send a new one.'); return render() }
+  acct.step = 'email'; toast('Welcome to LIFT!');
+}
+async function signOut(){
+  if(sb) await sb.auth.signOut();
+  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('train'); toast('Signed out');
+}
+function loginHTML(intro){
+  if(!authEnabled()) return '';
+  if(!acct.ready) return `<p class="small mut">Connecting…</p>`;
+  if(acct.step === 'code') return `<form onsubmit="verifyCode(event)"><p class="small">We sent an email to <b>${esc(acct.email)}</b>.</p><p class="small mut"><b>Tap the sign-in link</b> in the email – or, if the email shows a code, enter it here:</p>
+    <input id="acCode" class="txt" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" aria-label="Code from email" style="letter-spacing:4px;font-size:22px;text-align:center">
+    <button class="btn pri block" style="margin-top:10px" ${acct.busy?'disabled':''}>${acct.busy?'Checking…':'Sign in'}</button>
+    <button type="button" class="link" onclick="acct.step='email';render()">Use another email or resend</button></form>`;
+  return `<form onsubmit="sendCode(event)"><p class="small mut">${intro || 'Sign in with your email. No password – we email you a sign-in link.'}</p>
+    <div class="row"><input id="acEmail" class="txt grow" type="email" autocomplete="email" required placeholder="you@email.com" aria-label="Your email" value="${esc(acct.email)}">
+    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':'Send'}</button></div></form>`;
+}
+
+/* --- Betaling --- */
+let plan = 'year', premFrom = '';
+async function startCheckout(){
+  if(!acct.user) return toast('Please sign in first');
+  acct.busy = true; render(); track('checkout-start-' + plan);
+  try{ const d = await callFn('create-checkout', {plan}); location.href = d.url }
+  catch(code){ acct.busy = false; render(); toast(ERR[code] || ERR.server_error); if(code==='already_premium') refreshSub() }
+}
+async function openPortal(){
+  acct.busy = true; render();
+  try{ const d = await callFn('customer-portal'); location.href = d.url }
+  catch(code){ acct.busy = false; render(); toast(ERR[code] || ERR.server_error) }
+}
+async function handleCheckoutReturn(){
+  const q = new URLSearchParams(location.search), r = q.get('checkout');
+  if(!r) return;
+  window.history.replaceState(null, '', location.pathname + '?app');
+  if(r === 'cancel'){ toast('Payment cancelled – nothing was charged'); return }
+  track('checkout-success'); toast('Thanks! Activating Premium…');
+  for(let i=0;i<8 && !(S.profile.premium && S.profile.premium.source==='stripe');i++){ await new Promise(r=>setTimeout(r,2500)); await refreshSub() }
+  if(isPremium()){ toast('Premium is active – enjoy!'); go('premium') } else toast('Payment received. Premium will appear in a moment – try reopening the app.');
+}
+
+/* ============================== NAVIGATION ============================== */
+let view = 'train';
+const TABS = [['train','Train','dumbbell'],['food','Food','apple'],['stats','Stats','chart'],['profile','Profile','user']];
+const SCREENS = {};   // udfyldes af train.js, food.js, stats.js, profile.js
+let prevView = 'train';
+function go(v){ if(v !== 'train') $('#installBox')?.remove(); if(v !== view && !['premium','done','routine'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
+function render(){
+  const gate = appGate();
+  const full = gate || ['workout','done','premium','routine'].includes(view);
+  $('#tabs').style.display = full ? 'none' : '';
+  $('#tabs .in').innerHTML = TABS.map(([k,l,i]) => `<button class="${view===k?'on':''}" onclick="go('${k}')" aria-label="${l}" ${view===k?'aria-current="page"':''}>${ic(i)}${l}</button>`).join('');
+  const app = $('#app');
+  if(gate) return SCREENS[gate](app);
+  (SCREENS[view] || SCREENS.train)(app);
+  renderRestBar();
+}
+// Hvad skal vises før selve appen? 1) splash mens vi tjekker login 2) opret konto/log ind 3) Premium-tilbud
+function appGate(){
+  if(!acct.skip && !CONFIG.requireAccount){ try{ acct.skip = localStorage.getItem('lift_skip') === '1' }catch(_){} }
+  if(authEnabled() && !acct.user && !acct.skip){
+    if(!acct.ready && !rememberedUser()) return 'splash';
+    if(acct.ready && !acct.offline) return 'auth';
+  }
+  if(!S.profile.offerSeen && !isPremium()) return 'offer';
+  return null;
+}
+const header = (title, right='') => `<header class="hdr">${title}${right}</header>`;
+const BARBELL = '<svg class="lb" viewBox="60 140 392 148" aria-hidden="true"><g fill="#39ff7a"><rect x="70" y="203" width="372" height="22" rx="11"/><rect x="112" y="150" width="40" height="128" rx="12"/><rect x="162" y="172" width="30" height="84" rx="10"/><rect x="360" y="150" width="40" height="128" rx="12"/><rect x="320" y="172" width="30" height="84" rx="10"/><rect x="76" y="186" width="26" height="56" rx="8"/><rect x="410" y="186" width="26" height="56" rx="8"/></g></svg>';
+const logoHTML = (big) => `<div class="logo grow ${big?'big':''}" aria-label="LIFT">${BARBELL}<span>L<i>I</i>FT</span></div>`;
+
+/* ============================== PAUSETIMER ============================== */
+let rest = null, restInt = null, audioCtx = null;
+function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume() }catch(e){} }
+function beep(f=880, d=.15, when=0){ if(!audioCtx || !S.profile.sound) return; try{ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=f; o.connect(g); g.connect(audioCtx.destination); const t=audioCtx.currentTime+when; g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+d); o.start(t); o.stop(t+d) }catch(e){} }
+function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p) }catch(e){} }
+function startRest(sec){ rest = {end:Date.now()+sec*1000, total:sec, fin:false}; clearInterval(restInt); restInt = setInterval(tickRest, 250); renderRestBar() }
+function stopRest(){ rest = null; clearInterval(restInt); renderRestBar() }
+const restLeft = () => rest ? Math.max(0, Math.ceil((rest.end - Date.now())/1000)) : 0;
+const mmss = s => Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+function tickRest(){
+  if(!rest) return;
+  const l = restLeft();
+  if(rest.fin) return;
+  if(l <= 3 && l > 0 && !rest['w'+l]){ rest['w'+l] = 1; beep(660,.1) }
+  if(l === 0){ rest.fin = true; beep(990,.25); beep(990,.35,.3); vibrate([200,100,200]); renderRestBar(); clearInterval(restInt); setTimeout(()=>{ if(rest && rest.fin) stopRest() }, 4000); return }
+  const t = $('#restT'); if(t){ t.textContent = mmss(l); $('#restB').style.width = (l/rest.total*100)+'%' } else renderRestBar();
+}
+function adjRest(d){ if(!rest || rest.fin) return; rest.end = Math.max(Date.now()+1000, rest.end + d*1000); rest.total = Math.max(rest.total, restLeft()); tickRest() }
+function renderRestBar(){
+  const b = $('#restbar');
+  if(!rest){ b.innerHTML = ''; return }
+  if(rest.fin){ b.innerHTML = `<div class="restbar"><div class="in fin row" onclick="stopRest()" role="alert"><span class="t">Go!</span><b class="grow">Time for your next set</b>${ic('check')}</div></div>`; return }
+  const bottom = view==='workout' ? '' : 'style="bottom:calc(74px + var(--bot))"';
+  b.innerHTML = `<div class="restbar" ${bottom}><div class="in row" role="timer" aria-live="off">
+    <div class="grow"><div class="xs mut">${ic('timer','sm')} Rest</div><span class="t" id="restT">${mmss(restLeft())}</span></div>
+    <button class="btn sm" onclick="adjRest(15)" aria-label="15 seconds more">+15</button>
+    <button class="btn sm pri" onclick="stopRest()">${ic('skip','sm')} Skip</button>
+    <div class="bar" id="restB" style="width:${restLeft()/rest.total*100}%"></div></div></div>`;
+}
+
+/* ============================== GRAFER ============================== */
+function setupCanvas(cv){ const dpr = window.devicePixelRatio||1, w = cv.clientWidth, h = +cv.getAttribute('height'); cv.width = w*dpr; cv.height = h*dpr; cv.style.height = h+'px'; const c = cv.getContext('2d'); c.scale(dpr,dpr); return [c,w,h] }
+function drawLine(cv, pts){
+  if(!cv || !pts.length) return; const [c,w,h] = setupCanvas(cv);
+  const pad = {l:38,r:12,t:12,b:26}, ys = pts.map(p=>p.y);
+  let mn = Math.min(...ys), mx = Math.max(...ys); if(mn===mx){ mn -= 1; mx += 1 } const span = mx-mn; mn -= span*.12; mx += span*.12;
+  const X = i => pad.l + (pts.length===1 ? (w-pad.l-pad.r)/2 : i*(w-pad.l-pad.r)/(pts.length-1)), Y = v => pad.t + (1-(v-mn)/(mx-mn))*(h-pad.t-pad.b);
+  c.font = '600 11px Inter, sans-serif'; c.fillStyle = '#a9b6af'; c.strokeStyle = '#2a342f'; c.lineWidth = 1;
+  for(let i=0;i<=3;i++){ const v = mn + (mx-mn)*i/3, y = Y(v); c.beginPath(); c.moveTo(pad.l,y); c.lineTo(w-pad.r,y); c.stroke(); c.fillText(fmt(Math.round(v*10)/10), 2, y+4) }
+  const stp = Math.ceil(pts.length/4); pts.forEach((p,i)=>{ if(i%stp===0 || i===pts.length-1) c.fillText(typeof p.x==='string' && p.x.length<6 ? p.x : dk(p.x), Math.max(pad.l-10, Math.min(X(i)-14, w-46)), h-6) });
+  const g = c.createLinearGradient(0,pad.t,0,h-pad.b); g.addColorStop(0,'rgba(57,255,122,.32)'); g.addColorStop(1,'rgba(57,255,122,0)');
+  c.beginPath(); pts.forEach((p,i)=> i ? c.lineTo(X(i),Y(p.y)) : c.moveTo(X(i),Y(p.y))); c.lineTo(X(pts.length-1),h-pad.b); c.lineTo(X(0),h-pad.b); c.fillStyle = g; c.fill();
+  c.beginPath(); pts.forEach((p,i)=> i ? c.lineTo(X(i),Y(p.y)) : c.moveTo(X(i),Y(p.y))); c.strokeStyle = '#39ff7a'; c.lineWidth = 3; c.lineJoin='round'; c.stroke();
+  pts.forEach((p,i)=>{ c.beginPath(); c.arc(X(i),Y(p.y),4,0,7); c.fillStyle='#0b0d0c'; c.fill(); c.strokeStyle='#39ff7a'; c.lineWidth=2; c.stroke() });
+}
+function drawBars(cv, pts){
+  if(!cv) return; const [c,w,h] = setupCanvas(cv);
+  const pad = {l:4,r:4,t:16,b:20}, mx = Math.max(1,...pts.map(p=>p.y)), bw = (w-pad.l-pad.r)/pts.length;
+  c.font = '600 11px Inter, sans-serif'; c.textAlign = 'center';
+  pts.forEach((p,i)=>{ const bh = (p.y/mx)*(h-pad.t-pad.b), x = pad.l + i*bw + bw*.15, y = h-pad.b-bh;
+    c.fillStyle = i===pts.length-1 ? '#39ff7a' : '#1f6b3b'; c.fillRect(x,y,bw*.7,Math.max(bh,2));
+    c.fillStyle = '#a9b6af'; c.fillText(p.x, x+bw*.35, h-5); if(p.y) c.fillText(p.y>=1000 ? (p.y/1000).toFixed(1)+'t' : p.y, x+bw*.35, y-4) });
+}
+
+/* ============================== HJEMMESKÆRM (PWA) ============================== */
+let deferredPrompt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e });
+addEventListener('appinstalled', () => { $('#installBox')?.remove(); toast('LIFT was added to your home screen'); track('installed') });
+function showInstall(force){
+  if(isStandalone() || window.top !== window.self) return;
+  if(!force && (view !== 'train' || S.current || $('#modal .sheet'))) return;   // aldrig midt i en træning
+  try{ if(!force && localStorage.getItem('lift_noinstall')) return }catch(e){}
+  if(!force && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) return;
+  $('#installBox')?.remove();
+  const d = document.createElement('div'); d.id = 'installBox'; d.className = 'install'; d.setAttribute('role','dialog');
+  d.innerHTML = `<div class="banner"><span class="bi">${ic('install')}</span><div class="grow"><b>Add LIFT to your home screen</b>
+    ${deferredPrompt ? `<p class="small mut">Then it opens like a real app.</p><button class="btn sm pri block" onclick="doInstall()">Install app</button>`
+      : isIOS() ? `<p class="small">1. Tap Share ${ic('share','sm')} in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Tap <b>Add</b></p>`
+      : `<p class="small">Open the browser menu (⋮) and choose <b>Add to Home screen</b>.</p>`}</div>
+    <button class="iconbtn" onclick="dismissInstall()" aria-label="Close">${ic('x')}</button></div>`;
+  document.body.appendChild(d);
+}
+function dismissInstall(){ try{ localStorage.setItem('lift_noinstall','1') }catch(e){} $('#installBox')?.remove() }
+async function doInstall(){ if(!deferredPrompt) return; deferredPrompt.prompt(); try{ await deferredPrompt.userChoice }catch(e){} deferredPrompt = null; $('#installBox')?.remove() }
+if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ============================== START ============================== */
+let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(()=>{ if(view==='stats') render() }, 200) });
+function start(){
+  load();
+  if(S.summary) view = 'done'; else if(S.current) view = 'workout';
+  render();
+  initAccount();
+}

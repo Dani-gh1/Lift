@@ -1,28 +1,21 @@
 /* =====================================================================
    LIFT – DATAFIL
-   Her kan du tilføje/ændre øvelser og programmer UDEN at røre app.js.
+   Her kan du ændre indstillinger, øvelser, skabeloner og næringsstoffer
+   UDEN at røre resten af koden.
 
    ØVELSE (i EX):
      nøgle: {
-       n:     'Navn der vises',
-       t:     'w' = med vægt (kg) | 'bw' = kropsvægt (gentagelser) | 's' = tid (sekunder)
-       inc:   hvor meget der lægges til ved fremgang (kg, gentagelser eller sekunder)
-       start: startvægt / start-gentagelser første gang
-       needs: udstyr der kræves, fx ['haandvaegte'] (se UDSTYR) – [] = intet
-       alt:   øvelse der bruges i stedet, hvis man mangler udstyret (Premium)
-       a:     animation: squat | push | bench | hinge | press | pike | chestpress | row | invrow | bridge | lunge | plank | pull | swing
-       vis:   (valgfri) udstyr i animationen: barbell | dumbbell | kb | band | cable | sled | table
-       rest:  pause i sekunder efter hvert sæt
-       cue:   2-3 korte tekniktrin
-       video: (valgfri) sti til EGEN video, fx 'videos/squat.mp4'. Brug kun egne
-              eller frit licenserede videoer.
+       n:   'Navn der vises'
+       m:   muskelgruppe: 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Arms' | 'Core' | 'Full body'
+       t:   'w' = vægt + reps | 'bw' = kun reps (kropsvægt) | 's' = tid i sekunder
+       inc: (valgfri) hvor meget vægten øges, når man klarer alle sæt (standard 2.5)
+       needs: (valgfri) udstyr – bruges til animationen: ['stang'] | ['haandvaegte'] | ['kettlebell'] | ['elastik'] | ['maskiner']
+       a:   (valgfri) animation: squat | push | bench | hinge | press | pike | chestpress | row | invrow | bridge | lunge | plank | pull | swing
+       cue: (valgfri) 2–3 korte tekniktrin
      }
 
-   PROGRAM (i PROGRAMS):
-     days:  træningsdage (Dag A, B, C …) der skiftes rundt.
-            Hver øvelse skrives som ['øvelses-nøgle', sæt, gentagelser]
-            (for tid-øvelser er tallet sekunder)
-     weeks: 4 uger. sets/reps lægges til grundtallet den uge (kan være negativt).
+   SKABELON (i TEMPLATES): færdige rutiner man kan starte med ét tryk.
+     ex: [['øvelses-nøgle', sæt, reps], ...]   (for tid-øvelser er reps = sekunder)
    ===================================================================== */
 
 const CONFIG = {
@@ -31,139 +24,125 @@ const CONFIG = {
   priceMonth: 49,          // kr./md.
   priceYear: 349,          // kr./år
   trialDays: 7,
-  weeks: 4,                // programlængde i uger
-  // Privatlivsvenlig måling med GoatCounter (gratis): opret en konto på goatcounter.com
-  // og skriv din kode her, fx 'lift-app'. Tom = ingen måling.
+  // Privatlivsvenlig måling med GoatCounter. Tom = ingen måling.
   goatcounterCode: 'liftapp',
-  // Venteliste: link til fx en gratis Tally- eller Google-formular. Tom = gem kun interesse lokalt.
+  // Venteliste (vises indtil betaling er slået til for alle)
   waitlistUrl: 'https://tally.so/r/gbaZlJ',
-  // Testknapper i Profil (slå Premium til, eksempeldata). false = skjult for brugere.
-  // Du kan stadig se dem ved at åbne appen med ?test, fx .../Lift/?app&test
+  // Testknapper i Profil. Vises altid, når appen åbnes med ?app&test
   showTestTools: false,
-  // Betaling og login (Supabase + Stripe). Tom = Premium-siden viser venteliste i stedet.
-  // Se SETUP.md for hvordan du får dem. Begge værdier må gerne være offentlige.
+  // Login, konto-data og betaling (Supabase + Stripe). Begge værdier er offentlige.
   supabaseUrl: 'https://akcqdkekmxfpudicacod.supabase.co',
-  supabaseAnonKey: 'sb_publishable_RskGvaF5kH3o-d-UEbFRaA__2AU-Di6',   // offentlig nøgle – må gerne ses
-  // false = login/betaling vises kun i testtilstand (åbn appen med ?app&test). Alle andre ser ventelisten.
-  // Sæt til true, når del 5–7 i SETUP.md virker.
+  supabaseAnonKey: 'sb_publishable_RskGvaF5kH3o-d-UEbFRaA__2AU-Di6',
+  // false = BETALING vises kun i testtilstand (?app&test). Login og gem-på-konto virker for alle.
   paymentsLive: false,
+  // true = man SKAL oprette konto før appen kan bruges. false = login-skærmen har også "Continue without account".
+  // Sæt kun til true, når du har din egen mail-afsender (SMTP) i Supabase – ellers får brugerne ikke login-mailen.
+  requireAccount: false,
+  // Varedata til stregkode-scanning og søgning (gratis, åben database)
+  foodApi: 'https://world.openfoodfacts.org',
 };
 
-const UDSTYR = {stang:'Barbell + rack', baenk:'Bench', haandvaegte:'Dumbbells', kettlebell:'Kettlebell', elastik:'Resistance band', pullupbar:'Pull-up bar', maskiner:'Cables & machines'};
-
-const MAAL = {
-  styrke:  {n:'Get stronger',   d:'Lift heavier with fewer reps',  icon:'bolt'},
-  form:    {n:'Get fit',        d:'More energy and better fitness', icon:'heart'},
-  muskler: {n:'Build muscle',   d:'More reps and more volume',      icon:'dumbbell'},
-};
+const MUSCLES = ['Chest','Back','Legs','Glutes','Shoulders','Arms','Core','Full body'];
 
 const EX = {
-  squat_bw:{n:'Squat',t:'bw',inc:1,start:10,needs:[],a:'squat',rest:60,cue:['Feet shoulder-width apart, arms forward','Sit down and back – like onto a chair','Knees follow your toes, back straight']},
-  pushup:{n:'Push-ups',t:'bw',inc:1,start:6,needs:[],a:'push',rest:60,cue:['Hands slightly wider than your shoulders','Keep your body straight like a plank','Too hard? Put your knees on the floor']},
-  table_row:{n:'Table row',t:'bw',inc:1,start:6,needs:[],a:'invrow',rest:60,cue:['Lie under a sturdy table and grab the edge','Keep your body straight','Pull your chest up towards the edge']},
-  glute_bridge:{n:'Glute bridge',t:'bw',inc:1,start:12,needs:[],a:'bridge',rest:45,cue:['Lie on your back, feet close to your bum','Push your hips up into a straight line','Squeeze your glutes at the top']},
-  lunge:{n:'Lunges',t:'bw',inc:1,start:8,needs:[],a:'lunge',rest:60,cue:['Take a long step forward','Lower your back knee towards the floor','Reps are per leg']},
-  pike_pushup:{n:'Pike push-up',t:'bw',inc:1,start:5,needs:[],a:'pike',rest:60,cue:['Hips high – body like an upside-down V','Bend your arms and lower your head to the floor','Push back up']},
-  plank:{n:'Plank',t:'s',inc:5,start:20,needs:[],a:'plank',rest:45,cue:['Elbows under your shoulders','Brace your abs and glutes','Keep your body straight – breathe calmly']},
-  squat_bb:{n:'Barbell squat',t:'w',inc:2.5,start:20,needs:['stang'],alt:'goblet',a:'squat',rest:120,cue:['The bar rests on your upper back','Sit down and back – knees follow your toes','Go down until your thighs are level, then push up']},
-  goblet:{n:'Goblet squat',t:'w',inc:2.5,start:8,needs:['haandvaegte'],alt:'squat_bw',a:'squat',rest:90,cue:['Hold the dumbbell close to your chest','Back straight, elbows pointing down','Sit deep and stand up']},
-  bench:{n:'Bench press',t:'w',inc:2.5,start:20,needs:['stang','baenk'],alt:'db_bench',a:'bench',rest:120,cue:['Squeeze your shoulder blades together','Lower the bar slowly to your chest','Press up over your shoulders']},
-  db_bench:{n:'Dumbbell chest press',t:'w',inc:2.5,start:8,needs:['haandvaegte'],alt:'pushup',a:'bench',rest:90,cue:['Lie on a bench or the floor, weights over your chest','Lower until elbows are about 45° from your body','Press back up']},
-  row_bb:{n:'Barbell row',t:'w',inc:2.5,start:20,needs:['stang'],alt:'db_row',a:'row',rest:90,cue:['Hips back, flat back','Pull the bar to your belly button','Lower slowly']},
-  db_row:{n:'One-arm row',t:'w',inc:2.5,start:8,needs:['haandvaegte'],alt:'table_row',a:'row',rest:75,cue:['Support your hand and knee on a bench','Pull the weight up towards your hip','Switch sides after the set']},
-  ohp:{n:'Barbell overhead press',t:'w',inc:2.5,start:20,needs:['stang'],alt:'db_ohp',a:'press',rest:90,cue:['Stand firm, brace abs and glutes','Press the bar straight up','Lower it to your chin']},
-  db_ohp:{n:'Dumbbell shoulder press',t:'w',inc:2.5,start:6,needs:['haandvaegte'],alt:'pike_pushup',a:'press',rest:75,cue:['Weights at shoulder height','Press up until your arms are straight','Lower slowly']},
-  rdl:{n:'Romanian deadlift',t:'w',inc:2.5,start:30,needs:['stang'],alt:'db_rdl',a:'hinge',rest:120,cue:['Slightly bent knees, bar close to your legs','Push your hips back with a straight back','Stop when you feel the back of your thighs']},
-  db_rdl:{n:'Dumbbell Romanian deadlift',t:'w',inc:2.5,start:10,needs:['haandvaegte'],alt:'glute_bridge',a:'hinge',rest:90,cue:['Weights in front of your thighs','Hips back, back straight','Stand up by pushing your hips forward']},
-  latpull:{n:'Lat pulldown',t:'w',inc:2.5,start:25,needs:['maskiner'],alt:'table_row',a:'pull',rest:90,cue:['Wide grip, lean back slightly','Pull the bar to your chest','Fully straighten your arms on the way up']},
-  legpress:{n:'Leg press',t:'w',inc:5,start:40,needs:['maskiner'],alt:'goblet',a:'squat',rest:90,cue:['Feet in the middle of the platform','Lower until your knees are about 90°','Press up without locking your knees']},
-  kb_swing:{n:'Kettlebell swing',t:'w',inc:4,start:12,needs:['kettlebell'],alt:'glute_bridge',a:'swing',rest:75,cue:['Feet slightly wider than your hips','Swing the bell back between your legs','Snap your hips forward – your arms are just ropes']},
-  kb_goblet:{n:'Kettlebell goblet squat',t:'w',inc:4,start:8,needs:['kettlebell'],alt:'squat_bw',a:'squat',rest:75,cue:['Hold the bell in front of your chest','Sit down deep','Stand up with a straight back']},
-  band_row:{n:'Band row',t:'bw',inc:1,start:12,needs:['elastik'],alt:'table_row',a:'row',rest:60,cue:['Anchor the band at chest height','Pull your elbows back','Release slowly']},
-  band_press:{n:'Band chest press',t:'bw',inc:1,start:12,needs:['elastik'],alt:'pushup',a:'chestpress',rest:60,cue:['Band behind your back','Press your arms forward','Return with control']},
+  // Bryst
+  bench:{n:'Bench press',m:'Chest',t:'w',needs:['stang'],a:'bench',cue:['Squeeze your shoulder blades together','Lower the bar slowly to your chest','Press up over your shoulders']},
+  db_bench:{n:'Dumbbell bench press',m:'Chest',t:'w',needs:['haandvaegte'],a:'bench',cue:['Weights over your chest','Lower until elbows are about 45° from your body','Press back up']},
+  incline_db:{n:'Incline dumbbell press',m:'Chest',t:'w',needs:['haandvaegte'],a:'bench',cue:['Bench at about 30°','Lower to upper chest','Press up and slightly in']},
+  chest_fly:{n:'Cable chest fly',m:'Chest',t:'w',needs:['maskiner'],cue:['Slight bend in the elbows','Bring your hands together in front of your chest','Open slowly']},
+  pushup:{n:'Push-ups',m:'Chest',t:'bw',a:'push',cue:['Hands slightly wider than shoulders','Body straight like a plank','Too hard? Knees on the floor']},
+  dips:{n:'Dips',m:'Chest',t:'bw',cue:['Lean slightly forward','Lower until shoulders are at elbow height','Push back up']},
+  band_press:{n:'Band chest press',m:'Chest',t:'bw',needs:['elastik'],a:'chestpress',cue:['Band behind your back','Press your arms forward','Return with control']},
+  // Ryg
+  deadlift:{n:'Deadlift',m:'Back',t:'w',inc:5,needs:['stang'],a:'hinge',cue:['Bar over mid-foot','Flat back, chest up','Push the floor away and stand tall']},
+  row_bb:{n:'Barbell row',m:'Back',t:'w',needs:['stang'],a:'row',cue:['Hips back, flat back','Pull the bar to your belly button','Lower slowly']},
+  db_row:{n:'One-arm dumbbell row',m:'Back',t:'w',needs:['haandvaegte'],a:'row',cue:['Hand and knee on a bench','Pull the weight to your hip','Switch sides after the set']},
+  latpull:{n:'Lat pulldown',m:'Back',t:'w',needs:['maskiner'],a:'pull',cue:['Wide grip, lean back slightly','Pull the bar to your chest','Straighten your arms fully on the way up']},
+  cable_row:{n:'Seated cable row',m:'Back',t:'w',needs:['maskiner'],cue:['Sit tall','Pull the handle to your stomach','Squeeze your shoulder blades']},
+  pullup:{n:'Pull-ups',m:'Back',t:'bw',a:'pull',cue:['Hang with straight arms','Pull your chin over the bar','Lower with control']},
+  table_row:{n:'Table row',m:'Back',t:'bw',a:'invrow',cue:['Lie under a sturdy table','Keep your body straight','Pull your chest to the edge']},
+  band_row:{n:'Band row',m:'Back',t:'bw',needs:['elastik'],a:'row',cue:['Anchor the band at chest height','Pull your elbows back','Release slowly']},
+  face_pull:{n:'Face pull',m:'Back',t:'w',needs:['maskiner'],cue:['Rope at face height','Pull towards your forehead','Elbows high and wide']},
+  // Ben
+  squat_bb:{n:'Barbell squat',m:'Legs',t:'w',needs:['stang'],a:'squat',cue:['Bar on your upper back','Sit down and back – knees follow toes','Down until thighs are level, then up']},
+  goblet:{n:'Goblet squat',m:'Legs',t:'w',needs:['haandvaegte'],a:'squat',cue:['Dumbbell close to your chest','Back straight, elbows down','Sit deep and stand up']},
+  squat_bw:{n:'Bodyweight squat',m:'Legs',t:'bw',a:'squat',cue:['Feet shoulder-width apart','Sit down and back','Knees follow your toes']},
+  legpress:{n:'Leg press',m:'Legs',t:'w',inc:5,needs:['maskiner'],a:'squat',cue:['Feet in the middle of the platform','Lower until knees are about 90°','Press without locking your knees']},
+  lunge:{n:'Lunges',m:'Legs',t:'bw',a:'lunge',cue:['Take a long step forward','Lower your back knee towards the floor','Reps are per leg']},
+  db_lunge:{n:'Dumbbell lunges',m:'Legs',t:'w',needs:['haandvaegte'],a:'lunge',cue:['Weights at your sides','Long step forward','Reps are per leg']},
+  leg_ext:{n:'Leg extension',m:'Legs',t:'w',needs:['maskiner'],cue:['Back against the pad','Straighten your legs','Lower slowly']},
+  leg_curl:{n:'Leg curl',m:'Legs',t:'w',needs:['maskiner'],cue:['Pad just above your heels','Curl your heels towards your bum','Lower slowly']},
+  calf_raise:{n:'Calf raise',m:'Legs',t:'w',cue:['Stand on the balls of your feet','Rise as high as you can','Lower below the step']},
+  // Baller / hofte
+  rdl:{n:'Romanian deadlift',m:'Glutes',t:'w',needs:['stang'],a:'hinge',cue:['Slightly bent knees, bar close to legs','Push hips back with a flat back','Stand up by driving hips forward']},
+  db_rdl:{n:'Dumbbell Romanian deadlift',m:'Glutes',t:'w',needs:['haandvaegte'],a:'hinge',cue:['Weights in front of your thighs','Hips back, back straight','Drive your hips forward']},
+  hip_thrust:{n:'Hip thrust',m:'Glutes',t:'w',needs:['stang'],a:'bridge',cue:['Upper back on a bench','Drive your hips up','Squeeze your glutes at the top']},
+  glute_bridge:{n:'Glute bridge',m:'Glutes',t:'bw',a:'bridge',cue:['Feet close to your bum','Push your hips up','Squeeze at the top']},
+  kb_swing:{n:'Kettlebell swing',m:'Glutes',t:'w',inc:4,needs:['kettlebell'],a:'swing',cue:['Feet wider than hips','Swing the bell back between your legs','Snap your hips forward']},
+  // Skuldre
+  ohp:{n:'Overhead press',m:'Shoulders',t:'w',needs:['stang'],a:'press',cue:['Brace abs and glutes','Press the bar straight up','Lower to your chin']},
+  db_ohp:{n:'Dumbbell shoulder press',m:'Shoulders',t:'w',needs:['haandvaegte'],a:'press',cue:['Weights at shoulder height','Press up to straight arms','Lower slowly']},
+  lat_raise:{n:'Lateral raise',m:'Shoulders',t:'w',inc:1,needs:['haandvaegte'],cue:['Slight bend in your elbows','Raise to shoulder height','Lower slowly']},
+  pike_pushup:{n:'Pike push-up',m:'Shoulders',t:'bw',a:'pike',cue:['Hips high like an upside-down V','Lower your head to the floor','Push back up']},
+  // Arme
+  db_curl:{n:'Dumbbell curl',m:'Arms',t:'w',inc:1,needs:['haandvaegte'],cue:['Elbows close to your body','Curl up without swinging','Lower slowly']},
+  bb_curl:{n:'Barbell curl',m:'Arms',t:'w',needs:['stang'],cue:['Elbows still','Curl the bar up','Lower with control']},
+  hammer_curl:{n:'Hammer curl',m:'Arms',t:'w',inc:1,needs:['haandvaegte'],cue:['Palms facing each other','Curl up','Lower slowly']},
+  triceps_push:{n:'Triceps pushdown',m:'Arms',t:'w',needs:['maskiner'],cue:['Elbows tight to your sides','Push down until arms are straight','Return slowly']},
+  skull_crusher:{n:'Skull crusher',m:'Arms',t:'w',needs:['stang'],cue:['Lie on a bench, arms up','Bend elbows to lower bar to forehead','Straighten your arms']},
+  // Core
+  plank:{n:'Plank',m:'Core',t:'s',inc:5,a:'plank',cue:['Elbows under shoulders','Brace abs and glutes','Body straight, breathe calmly']},
+  crunch:{n:'Crunch',m:'Core',t:'bw',cue:['Lie on your back, knees bent','Curl your shoulders off the floor','Lower slowly']},
+  leg_raise:{n:'Hanging leg raise',m:'Core',t:'bw',cue:['Hang from a bar','Lift your legs to hip height','Lower without swinging']},
+  russian_twist:{n:'Russian twist',m:'Core',t:'bw',cue:['Sit with feet off the floor','Rotate side to side','Reps count both sides']},
+  // Hele kroppen
+  burpee:{n:'Burpees',m:'Full body',t:'bw',cue:['Squat down, hands on the floor','Jump back to a plank, then forward','Jump up']},
+  kb_goblet:{n:'Kettlebell goblet squat',m:'Legs',t:'w',inc:4,needs:['kettlebell'],a:'squat',cue:['Hold the bell at your chest','Sit down deep','Stand up tall']},
 };
 
-// Opvarmning og nedkøling (bruges i alle programmer)
-const OPVARMNING = [
-  {n:'Jog or march on the spot', sek:60},
-  {n:'Arm circles forwards and backwards', sek:30},
-  {n:'Hip circles', sek:30},
-  {n:'10 slow squats', sek:45},
-  {n:'10 push-ups against a wall or table', sek:45},
-];
-const NEDKOELING = [
-  {n:'Front thigh stretch (30 sec per leg)', sek:60},
-  {n:'Back thigh stretch', sek:30},
-  {n:'Chest stretch in a doorway', sek:30},
-  {n:'Slow, deep breaths', sek:30},
+// Færdige rutiner (skabeloner). Brugeren kan gemme sine egne i appen.
+const TEMPLATES = [
+  {id:'t_home_a', name:'Home – Full body A', tag:'Beginner · No equipment', ex:[['squat_bw',3,12],['pushup',3,8],['table_row',3,8],['glute_bridge',3,15],['plank',2,30]]},
+  {id:'t_home_b', name:'Home – Full body B', tag:'Beginner · No equipment', ex:[['lunge',3,10],['pike_pushup',3,6],['glute_bridge',3,15],['table_row',3,8],['crunch',3,15]]},
+  {id:'t_gym_a', name:'Gym – Full body A', tag:'Beginner · Gym', ex:[['legpress',3,10],['db_bench',3,10],['latpull',3,10],['plank',2,30]]},
+  {id:'t_gym_b', name:'Gym – Full body B', tag:'Beginner · Gym', ex:[['goblet',3,10],['db_ohp',3,10],['cable_row',3,10],['db_rdl',3,10]]},
+  {id:'t_push', name:'Push', tag:'Intermediate · Gym', ex:[['bench',4,6],['incline_db',3,10],['ohp',3,8],['lat_raise',3,12],['triceps_push',3,12]]},
+  {id:'t_pull', name:'Pull', tag:'Intermediate · Gym', ex:[['deadlift',3,5],['pullup',3,8],['row_bb',3,8],['face_pull',3,15],['db_curl',3,12]]},
+  {id:'t_legs', name:'Legs', tag:'Intermediate · Gym', ex:[['squat_bb',4,6],['rdl',3,8],['legpress',3,12],['leg_curl',3,12],['calf_raise',3,15]]},
+  {id:'t_db', name:'Dumbbells only', tag:'Any level · Dumbbells', ex:[['goblet',3,10],['db_bench',3,10],['db_row',3,10],['db_ohp',3,10],['db_curl',3,12]]},
 ];
 
-const PROGRAMS = [
-  {id:'hjem', name:'Get Started', place:'Home or gym', free:true, level:'Level 1', equip:'No equipment', minutes:30,
-   desc:'Your first program. Bodyweight only, so you can train anywhere. You learn the key movements and get stronger week by week.',
-   weeks:[
-     {focus:'Learn the moves', tip:'It should feel easy. Focus on doing it right.', sets:-1, reps:0},
-     {focus:'Build the habit', tip:'One more set. Stick to your training days.', sets:0, reps:0},
-     {focus:'A bit more', tip:'2 more reps in every set. You can do it!', sets:0, reps:2},
-     {focus:'Test yourself', tip:'Final week – give it everything and beat your records.', sets:0, reps:3},
-   ],
-   days:[
-     {n:'Day A', ex:[['squat_bw',3,10],['pushup',3,6],['table_row',3,6],['glute_bridge',3,12],['plank',2,20]]},
-     {n:'Day B', ex:[['lunge',3,8],['pike_pushup',3,5],['glute_bridge',3,12],['table_row',3,6],['plank',2,25]]},
-     {n:'Day C', ex:[['squat_bw',3,12],['pushup',3,6],['lunge',3,8],['table_row',3,8],['plank',2,20]]},
-   ]},
-  {id:'maskine', name:'Gym Start', place:'Gym', level:'Level 1', equip:'Machines + dumbbells', minutes:40,
-   desc:'Safe and simple: machines and dumbbells, so you can train at the gym without a partner.',
-   weeks:[
-     {focus:'Find your starting weights', tip:'Pick a weight where the last 2 reps are hard.', sets:-1, reps:0},
-     {focus:'Build the habit', tip:'Hit all your reps and we increase the weight.', sets:0, reps:0},
-     {focus:'More weight', tip:'Follow the suggestions – a little heavier each time.', sets:0, reps:0},
-     {focus:'Beat your records', tip:'Final week. Go for new records!', sets:0, reps:0},
-   ],
-   days:[
-     {n:'Day A', ex:[['legpress',3,10],['db_bench',3,10],['latpull',3,10],['plank',2,30]]},
-     {n:'Day B', ex:[['goblet',3,10],['db_ohp',3,10],['db_row',3,10],['db_rdl',3,10]]},
-     {n:'Day C', ex:[['legpress',3,12],['db_bench',3,12],['latpull',3,12],['glute_bridge',3,15]]},
-   ]},
-  {id:'gym', name:'Gym Basics', place:'Gym', level:'Level 2', equip:'Barbell, bench, machines', minutes:50,
-   desc:'The next level: the classic barbell lifts. Get stronger fast.',
-   weeks:[
-     {focus:'Learn the technique', tip:'Start with the empty bar (20 kg) and learn the movement.', sets:-1, reps:0},
-     {focus:'Build up', tip:'Hit all your reps and we add 2.5 kg.', sets:0, reps:0},
-     {focus:'Heavier', tip:'Follow the suggestions – technique first.', sets:0, reps:0},
-     {focus:'Beat your records', tip:'Final week. Go for new records!', sets:0, reps:0},
-   ],
-   days:[
-     {n:'Day A', ex:[['squat_bb',3,5],['bench',3,5],['row_bb',3,8],['plank',3,30]]},
-     {n:'Day B', ex:[['rdl',3,8],['ohp',3,5],['latpull',3,10],['lunge',3,10]]},
-     {n:'Day C', ex:[['squat_bb',3,5],['db_bench',3,10],['row_bb',3,8],['latpull',3,10]]},
-   ]},
-  {id:'haandvaegt', name:'Dumbbells at Home', place:'Home', level:'Level 2', equip:'A pair of dumbbells', minutes:40,
-   desc:'When bodyweight gets too easy: build strength at home with a pair of dumbbells.',
-   weeks:[
-     {focus:'Find your starting weights', tip:'Pick a weight where the last 2 reps are hard.', sets:-1, reps:0},
-     {focus:'Build the habit', tip:'Hit all your reps and we increase the weight.', sets:0, reps:0},
-     {focus:'More weight', tip:'A little heavier each time.', sets:0, reps:0},
-     {focus:'Beat your records', tip:'Final week. Go for new records!', sets:0, reps:0},
-   ],
-   days:[
-     {n:'Day A', ex:[['goblet',3,10],['db_bench',3,10],['db_row',3,10],['plank',3,30]]},
-     {n:'Day B', ex:[['db_rdl',3,10],['db_ohp',3,10],['lunge',3,10],['db_row',3,10]]},
-     {n:'Day C', ex:[['goblet',3,12],['db_bench',3,8],['db_rdl',3,10],['glute_bridge',3,15]]},
-   ]},
-  {id:'kb', name:'Kettlebell & Band', place:'Home', level:'Level 2', equip:'Kettlebell + band', minutes:35,
-   desc:'Compact and effective. Strength and cardio in one – needs very little space.',
-   weeks:[
-     {focus:'Learn the moves', tip:'The swing is a hip movement – not an arm movement.', sets:-1, reps:0},
-     {focus:'Build the habit', tip:'Keep a steady pace.', sets:0, reps:0},
-     {focus:'More work', tip:'Follow the suggestions.', sets:0, reps:2},
-     {focus:'Test yourself', tip:'Beat your records!', sets:0, reps:3},
-   ],
-   days:[
-     {n:'Day A', ex:[['kb_goblet',3,10],['band_press',3,12],['band_row',3,12],['kb_swing',3,15]]},
-     {n:'Day B', ex:[['kb_swing',4,12],['pushup',3,8],['lunge',3,10],['band_row',3,12]]},
-     {n:'Day C', ex:[['kb_goblet',3,10],['band_press',3,15],['glute_bridge',3,15],['plank',3,40]]},
-   ]},
+// Næringsstoffer. ff = nøgle i Open Food Facts, x = omregning fra deres enhed (gram) til vores enhed.
+// ri = dagligt referenceindtag (voksen). Premium viser alle; gratis viser kun kalorier.
+const NUTRIENTS = [
+  {k:'p',      n:'Protein',        u:'g',  ff:'proteins',      x:1},
+  {k:'c',      n:'Carbs',          u:'g',  ff:'carbohydrates', x:1},
+  {k:'f',      n:'Fat',            u:'g',  ff:'fat',           x:1},
+  {k:'fiber',  n:'Fiber',          u:'g',  ff:'fiber',         x:1,    ri:30},
+  {k:'sugar',  n:'Sugar',          u:'g',  ff:'sugars',        x:1,    ri:90},
+  {k:'satfat', n:'Saturated fat',  u:'g',  ff:'saturated-fat', x:1,    ri:20},
+  {k:'salt',   n:'Salt',           u:'g',  ff:'salt',          x:1,    ri:6},
+  {k:'potassium', n:'Potassium',   u:'mg', ff:'potassium',     x:1000, ri:2000},
+  {k:'calcium',n:'Calcium',        u:'mg', ff:'calcium',       x:1000, ri:800},
+  {k:'iron',   n:'Iron',           u:'mg', ff:'iron',          x:1000, ri:14},
+  {k:'magnesium', n:'Magnesium',   u:'mg', ff:'magnesium',     x:1000, ri:375},
+  {k:'zinc',   n:'Zinc',           u:'mg', ff:'zinc',          x:1000, ri:10},
+  {k:'vitc',   n:'Vitamin C',      u:'mg', ff:'vitamin-c',     x:1000, ri:80},
+  {k:'vitd',   n:'Vitamin D',      u:'µg', ff:'vitamin-d',     x:1e6,  ri:5},
+  {k:'b12',    n:'Vitamin B12',    u:'µg', ff:'vitamin-b12',   x:1e6,  ri:2.5},
+];
+const MEALS = ['Breakfast','Lunch','Dinner','Snacks'];
+
+const GOALS = {
+  muscle:   {n:'Build muscle',  d:'Gain size and strength', kcal:+250},
+  strength: {n:'Get stronger',  d:'Lift heavier weights',   kcal:+150},
+  fat:      {n:'Lose fat',      d:'Keep muscle, lose fat',  kcal:-400},
+  fit:      {n:'Stay fit',      d:'Feel good and healthy',  kcal:0},
+};
+const ACTIVITY = [
+  {v:1.375, n:'Light',    d:'1–3 workouts a week'},
+  {v:1.55,  n:'Moderate', d:'3–5 workouts a week'},
+  {v:1.725, n:'High',     d:'6–7 workouts or a physical job'},
 ];
 
-const ROS = ['Great job!', 'Nice! Another workout in the bank.', 'You get stronger every time.', 'Well fought – be proud of yourself.', 'That was a good one!'];
+const ROS = ['Great job!', 'Nice! Another workout in the bank.', 'You get stronger every time.', 'Well fought!', 'That was a good one!'];

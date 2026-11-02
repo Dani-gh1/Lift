@@ -1,5 +1,10 @@
 # LIFT – opsætning trin for trin
 
+> **Nyt i version 3 – gør dette:**
+> 1. **Kør den nye SQL:** Supabase → **SQL Editor** → **New query**. Indsæt hele [002_user_data.sql](https://github.com/FlowerSmokeapp/Lift/blob/main/supabase/migrations/002_user_data.sql) → **Run**. Den laver tabellen, hvor træninger og mad gemmes på kontoen.
+> 2. **Opsæt egen mail-afsender (del 8, punkt 1).** Uden den får dine brugere sandsynligvis ikke login-mailen.
+> 3. **Når mail virker:** sæt `requireAccount: true` i `data.js` (eller bed Claude om det). Så skal alle oprette konto først.
+
 Alt foregår i browseren. Du behøver ikke terminal eller programmer.
 Tag delene i rækkefølge. Hver del virker for sig, så du kan stoppe efter hvilken som helst.
 

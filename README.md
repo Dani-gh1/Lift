@@ -1,12 +1,16 @@
 # LIFT – strength training for beginners
 
-Mobile-first web app (PWA) for young beginners (15–22). Ready-made 4-week programs, rest timer, automatic workout log, progress charts. All data is stored locally on the device – no backend.
+Mobile-first web app (PWA) for everyone who trains: workout log that remembers what you lifted last time, routines, calorie tracking with barcode scanning, stats and an optional account that saves your data across devices (Supabase). Premium via Stripe.
 
 ## Filer
 | Fil | Hvad |
 |---|---|
 | `data.js` | **Øvelser, programmer, opvarmning, priser og indstillinger.** Her tilføjer du nye programmer/øvelser (se forklaringen øverst i filen). |
-| `app.js` | Al logik og skærme. |
+| `core.js` | Data, synkronisering med kontoen, login, betaling, fælles hjælpere. |
+| `train.js` | Træningslog (repcount), rutiner, skabeloner, historik. |
+| `food.js` | Kalorier, søgning, stregkode-scanning, makro- og mikronæringsstoffer. |
+| `stats.js` | Statistik (Premium). |
+| `profile.js` | Opret konto, Premium-tilbud, profil, mål, kropsvægt, backup. |
 | `styles.css` | Design. |
 | `index.html` | Skal der indlæser filerne. |
 | `computer.html` | Viser appen i en telefonramme på computer. |
