@@ -62,12 +62,12 @@ const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none
    Alt gemmes først på telefonen (virker offline). Er man logget ind, synkroniseres det med kontoen.
    Lister (træninger, mad …) har id + u (sidst ændret), så ændringer fra flere enheder kan flettes. */
 const KEY = 'lift_v3';
-const COLLS = ['workouts','routines','customEx','food','customFoods','body'];
+const COLLS = ['workouts','routines','customEx','food','customFoods','body','goals'];
 const SYNC_PROFILE = ['onboarded','offerSeen','goal','sex','age','height','weight','activity','kcalGoal','proteinGoal','weeklyGoal','restDefault','sound','unit'];
 const blankProfile = () => ({onboarded:false, offerSeen:false, goal:'muscle', sex:null, age:null, height:null, weight:null, activity:1.55,
   kcalGoal:null, proteinGoal:null, weeklyGoal:3, restDefault:90, sound:true, pu:0,
   premium:null, lastBackup:null, interest:null, waitlist:null, flags:{}});
-const blank = () => ({profile:blankProfile(), workouts:[], routines:[], customEx:[], food:[], customFoods:[], body:[], del:{}, current:null, summary:null});
+const blank = () => ({profile:blankProfile(), workouts:[], routines:[], customEx:[], food:[], customFoods:[], body:[], goals:[], del:{}, current:null, summary:null});
 let S = blank();
 
 function load(){
@@ -280,8 +280,9 @@ async function syncNow(first){
   if(syncAgain){ syncAgain = false; syncNow() }
 }
 function syncChip(){
-  const st = !acct.user ? ['cloudoff','On this device'] : syncState==='syncing' ? ['cloud','Saving…'] : syncState==='ok' ? ['cloud','Saved'] : syncState==='offline' ? ['cloudoff','Offline'] : ['cloudoff','Not saved'];
-  return `<button class="chip-save ${acct.user && syncState==='ok' ? 'ok' : ''}" id="syncChip" onclick="go('profile')" aria-label="${st[1]}">${ic(st[0])}${st[1]}</button>`;
+  // Lille, diskret ikon: grøn sky = gemt på kontoen, grå = kun på telefonen, gul = ikke gemt endnu
+  const st = !acct.user ? ['cloudoff','Saved on this phone only','off'] : syncState==='syncing' ? ['cloud','Saving…','busy'] : syncState==='ok' ? ['cloud','Saved to your account','ok'] : syncState==='offline' ? ['cloudoff','Offline – saved on this phone','warn'] : ['cloudoff','Not saved yet','warn'];
+  return `<button class="syncbtn ${st[2]}" id="syncChip" onclick="go('profile')" aria-label="${st[1]}" title="${st[1]}">${ic(st[0])}</button>`;
 }
 function updateSyncChip(){ const c = $('#syncChip'); if(c) c.outerHTML = syncChip() }
 
@@ -336,7 +337,7 @@ async function verifyCode(e){
 }
 async function signOut(){
   if(sb) await sb.auth.signOut();
-  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('train'); toast('Signed out');
+  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('home'); toast('Signed out');
 }
 function loginHTML(intro){
   if(!authEnabled()) return '';
@@ -374,11 +375,11 @@ async function handleCheckoutReturn(){
 }
 
 /* ============================== NAVIGATION ============================== */
-let view = 'train';
-const TABS = [['train','Train','dumbbell'],['food','Food','apple'],['stats','Stats','chart'],['profile','Profile','user']];
+let view = 'home';
+const TABS = [['home','Home','home'],['train','Train','dumbbell'],['food','Food','apple'],['goals','Goals','target'],['profile','Profile','user']];
 const SCREENS = {};   // udfyldes af train.js, food.js, stats.js, profile.js
-let prevView = 'train';
-function go(v){ if(v !== 'train') $('#installBox')?.remove(); if(v !== view && !['premium','done','routine'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
+let prevView = 'home';
+function go(v){ if(v !== 'home') $('#installBox')?.remove(); if(v !== view && !['premium','done','routine','workout'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
 function render(){
   const gate = appGate();
   const full = gate || ['workout','done','premium','routine'].includes(view);
@@ -386,7 +387,7 @@ function render(){
   $('#tabs .in').innerHTML = TABS.map(([k,l,i]) => `<button class="${view===k?'on':''}" onclick="go('${k}')" aria-label="${l}" ${view===k?'aria-current="page"':''}>${ic(i)}${l}</button>`).join('');
   const app = $('#app');
   if(gate) return SCREENS[gate](app);
-  (SCREENS[view] || SCREENS.train)(app);
+  (SCREENS[view] || SCREENS.home)(app);
   renderRestBar();
 }
 // Hvad skal vises før selve appen? 1) splash mens vi tjekker login 2) opret konto/log ind 3) Premium-tilbud
@@ -465,7 +466,7 @@ addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPromp
 addEventListener('appinstalled', () => { $('#installBox')?.remove(); toast('LIFT was added to your home screen'); track('installed') });
 function showInstall(force){
   if(isStandalone() || window.top !== window.self) return;
-  if(!force && (view !== 'train' || S.current || $('#modal .sheet'))) return;   // aldrig midt i en træning
+  if(!force && (view !== 'home' || S.current || $('#modal .sheet'))) return;   // aldrig midt i en træning
   try{ if(!force && localStorage.getItem('lift_noinstall')) return }catch(e){}
   if(!force && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) return;
   $('#installBox')?.remove();
@@ -482,7 +483,7 @@ async function doInstall(){ if(!deferredPrompt) return; deferredPrompt.prompt();
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 /* ============================== START ============================== */
-let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(()=>{ if(view==='stats') render() }, 200) });
+let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(()=>{ if(['goals','home','train'].includes(view) && !$('#modal .sheet')) render() }, 200) });
 function start(){
   load();
   if(S.summary) view = 'done'; else if(S.current) view = 'workout';

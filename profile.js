@@ -57,7 +57,7 @@ SCREENS.offer = app => {
   </div>`;
   track('offer-view');
 };
-function closeOffer(){ setProfile('offerSeen', true); S.profile.onboarded = true; lsSave(); view = 'train'; render(); setTimeout(() => showInstall(), 3000) }
+function closeOffer(){ setProfile('offerSeen', true); S.profile.onboarded = true; lsSave(); view = 'home'; render(); setTimeout(() => showInstall(), 3000) }
 
 function bodyForm(){
   const p = S.profile, f = (id, label, val, unit, mode='numeric') => `<label class="fld"><span class="xs mut">${label}</span><span class="row"><input id="${id}" class="txt" inputmode="${mode}" value="${val ?? ''}"><small class="mut">${unit}</small></span></label>`;
@@ -78,65 +78,39 @@ function readBodyForm(){
 
 /* ---------- Profil ---------- */
 SCREENS.profile = app => {
-  const p = S.profile, g = goals(), pr = isPremium(), lb = p.lastBackup;
-  const lastW = S.body.slice().sort((a,b) => b.d - a.d).slice(0,5);
+  const p = S.profile, pr = isPremium(), lb = p.lastBackup;
   app.innerHTML = `<div class="wrap">
     ${header(`<h1>Profile</h1>`, '')}
-    ${acct.user ? `<div class="card"><div class="banner"><span class="bi">${ic('user')}</span><div class="grow" style="min-width:0"><h3 style="margin:0">Your account</h3><p class="small mut" style="overflow:hidden;text-overflow:ellipsis">${esc(acct.user.email)}</p>
-        <p class="xs mut">${syncState==='ok' ? `${ic('cloud','xs')} Everything is saved to your account.` : syncState==='syncing' ? 'Saving…' : syncState==='offline' ? 'Offline – saved on this phone and uploaded when you are back online.' : 'Not saved yet – we will try again.'}</p></div></div>
-        <div class="grid2" style="margin-top:8px"><button class="btn sm" onclick="syncNow()">${ic('repeat','sm')} Sync now</button><button class="btn sm" onclick="signOut()">Sign out</button></div></div>`
-      : acct.offline ? `<div class="card"><p class="small mut">${ic('cloudoff','sm')} Offline – your data is saved on this phone and uploaded when you're back online.</p></div>`
-      : authEnabled() ? `<div class="card"><div class="banner"><span class="bi">${ic('cloudoff')}</span><div class="grow"><h3 style="margin:0">Save to your account</h3></div></div>${loginHTML('Your data is only on this phone. Create a free account to keep it safe and use LIFT on all your devices.')}</div>` : ''}
-    <button class="card prog" onclick="openPremium('profile')"><div class="row between"><div><h3 style="margin:0">${pr ? 'Premium' : 'LIFT Free'}</h3><p class="small mut" style="margin:2px 0 0">${!pr ? 'Upgrade for stats, barcode scanning and macros' : p.premium.source==='stripe' ? `${p.premium.status==='trialing'?'Trial until':p.premium.cancel?'Ends':'Renews'} ${dkLong(p.premium.until)}` : 'Test mode'}</p></div>${ic('chevR')}</div></button>
-    <div class="card"><h3>Goal</h3>
-      <div class="chips">${Object.entries(GOALS).map(([k,x]) => `<button class="chip ${p.goal===k?'on':''}" onclick="setProfile('goal','${k}');render()">${x.n}</button>`).join('')}</div>
-      <div class="grid2" style="margin-top:12px"><div class="stat"><span>Calories / day</span><b>${g.kcal}</b><span class="xs">${p.kcalGoal ? 'your own' : g.auto && p.weight ? 'calculated' : 'default'}</span></div><div class="stat"><span>Protein / day</span><b>${g.p} g</b></div></div>
-      <button class="btn sm block" style="margin-top:10px" onclick="editBody()">${ic('edit','sm')} Body & calorie goal</button>
-      <p class="small mut" style="margin:14px 0 6px">Workouts per week</p>
-      <div class="chips">${[2,3,4,5,6].map(n => `<button class="chip ${p.weeklyGoal===n?'on':''}" onclick="setProfile('weeklyGoal',${n});render()">${n}</button>`).join('')}</div>
-      <p class="small mut" style="margin:14px 0 6px">Rest timer</p>
+    ${acct.user ? `<div class="card"><div class="banner"><span class="bi">${ic('user')}</span><div class="grow" style="min-width:0"><b>Your account</b><p class="small mut ell" style="margin:2px 0 0">${esc(acct.user.email)}</p>
+        <p class="xs ${syncState==='ok' ? 'neon' : 'mut'}" style="margin:4px 0 0">${syncState==='ok' ? `${ic('cloud','xs')} Everything is saved to your account` : syncState==='syncing' ? 'Saving…' : syncState==='offline' ? 'Offline – saved on this phone, uploaded when you are back online' : 'Not saved yet – we will try again'}</p></div></div>
+        <div class="grid2" style="margin-top:10px"><button class="btn sm" onclick="syncNow()">${ic('repeat','sm')} Sync now</button><button class="btn sm" onclick="signOut()">Sign out</button></div></div>`
+      : acct.offline ? `<div class="card"><p class="small mut" style="margin:0">${ic('cloudoff','sm')} Offline – your data is saved on this phone and uploaded when you're back online.</p></div>`
+      : authEnabled() ? `<div class="card"><div class="banner"><span class="bi">${ic('cloudoff')}</span><div class="grow"><b>Save to your account</b></div></div>${loginHTML('Your data is only on this phone. Create a free account to keep it safe and use LIFT on all your devices.')}</div>` : ''}
+
+    <button class="lrow" onclick="openPremium('profile')"><span class="bi sm ${pr ? '' : 'gold'}">${ic('crown','sm')}</span><span class="grow"><b>${pr ? 'LIFT Premium' : 'Upgrade to Premium'}</b><span class="xs mut">${!pr ? 'Stats, barcode scanner, macros & vitamins' : p.premium.source==='stripe' ? `${p.premium.status==='trialing'?'Trial until':p.premium.cancel?'Ends':'Renews'} ${dkLong(p.premium.until)}` : 'Test mode'}</span></span>${ic('chevR','sm')}</button>
+    <button class="lrow" onclick="go('goals')"><span class="bi sm">${ic('target','sm')}</span><span class="grow"><b>Goals & body</b><span class="xs mut">${goals().kcal} kcal · ${goals().p} g protein · ${p.weeklyGoal||3} workouts/week</span></span>${ic('chevR','sm')}</button>
+
+    <div class="sect"><span>Settings</span></div>
+    <div class="card">
+      <p class="small" style="margin:0 0 8px"><b>Rest timer</b></p>
       <div class="chips">${[60,90,120,180].map(n => `<button class="chip ${p.restDefault===n?'on':''}" onclick="setProfile('restDefault',${n});render()">${n<120?n+' sec':n/60+' min'}</button>`).join('')}</div>
+      <button class="lrow flat" style="margin-top:10px" onclick="setProfile('sound',!S.profile.sound);render()"><span class="bi sm">${ic(p.sound ? 'sound' : 'mute','sm')}</span><span class="grow"><b>Timer sound</b></span><span class="toggle ${p.sound?'on':''}" aria-hidden="true"></span></button>
+      ${isStandalone() ? '' : `<button class="lrow flat" onclick="showInstall(true)"><span class="bi sm">${ic('install','sm')}</span><span class="grow"><b>Add to home screen</b></span>${ic('chevR','sm')}</button>`}
     </div>
-    <div class="card"><h3>${ic('scale','sm')} Body weight</h3>
-      <form class="row" onsubmit="addWeight(event)"><input id="bw" class="txt grow" inputmode="decimal" placeholder="Today's weight" aria-label="Body weight in kg"><span class="mut">kg</span><button class="btn sm pri">Log</button></form>
-      ${lastW.map(b => `<div class="row between small" style="padding:6px 0;border-top:1px solid var(--line)"><span class="mut">${dk(b.d)}</span><span><b>${fmt(b.kg)} kg</b> <button class="link xs" style="min-height:0;padding:0 0 0 8px" onclick="removeItem('body','${b.id}');render()" aria-label="Delete">${ic('x','sm')}</button></span></div>`).join('')}
-      ${S.body.length >= 2 && !pr ? `<p class="xs mut" style="margin-top:8px">${ic('lock','sm')} See your weight curve in Stats with Premium.</p>` : ''}
+
+    <div class="sect"><span>Your data</span></div>
+    <div class="card">
+      <p class="small mut" style="margin-top:0">${acct.user ? 'Saved to your account and on this phone.' : 'Saved on this phone only.'} Last backup: <b>${lb ? dkLong(lb) : 'never'}</b></p>
+      <div class="grid2"><button class="btn sm" onclick="exportJSON()">${ic('download','sm')} Save backup</button><button class="btn sm" onclick="importJSON()">${ic('upload','sm')} Restore</button></div>
+      <button class="btn sm block" style="margin-top:8px" onclick="exportCSV()">${pr ? ic('file','sm') : ic('lock','sm')} Export to spreadsheet</button>
+      <button class="btn sm block danger" style="margin-top:8px" onclick="askReset()">${ic('trash','sm')} Delete all my data</button>
     </div>
-    <div class="card"><h3>Your data</h3>
-      <p class="small mut">${acct.user ? 'Saved to your account and on this device.' : 'Saved on this device only. Make a backup, or sign in to save it to your account.'} Last backup: <b>${lb ? dkLong(lb) : 'never'}</b></p>
-      <div class="grid2"><button class="btn sm" onclick="exportJSON()">${ic('download','sm')} Save backup</button><button class="btn sm" onclick="importJSON()">${ic('upload','sm')} Restore backup</button></div>
-      <button class="btn sm block" style="margin-top:8px" onclick="exportCSV()">${pr ? ic('file','sm') : ic('lock','sm')} Export to spreadsheet (CSV)</button>
-    </div>
-    <div class="card"><h3>App</h3>
-      <button class="btn block" onclick="setProfile('sound',!S.profile.sound);render()">${p.sound ? ic('sound') + ' Rest timer sound: On' : ic('mute') + ' Rest timer sound: Off'}</button>
-      ${isStandalone() ? '' : `<button class="btn block" style="margin-top:8px" onclick="showInstall(true)">${ic('install')} Add to home screen</button>`}
-      <button class="btn block danger" style="margin-top:8px" onclick="askReset()">${ic('trash')} Delete all my data</button>
-    </div>
-    ${testTools() ? `<div class="card" style="border-style:dashed"><h3>For testing</h3><p class="xs mut">Only visible with ?test in the address.</p>
+    ${testTools() ? `<div class="card" style="border-style:dashed"><b>For testing</b><p class="xs mut">Only visible with ?test in the address.</p>
       <div class="grid2"><button class="btn sm" onclick="S.profile.premium=isPremium()?null:'test';lsSave();render()">${pr?'Turn Premium off':'Turn Premium on'}</button><button class="btn sm" onclick="loadDemo()">Sample data</button></div></div>` : ''}
-    <div class="warnline">${ic('alert')}<span>LIFT does not give medical advice. Stop if it hurts, and ask a doctor if you're ill or injured.</span></div>
-    <p class="xs mut center" style="margin-top:14px">LIFT · version 3 · ${legalLinks()}</p>
+    <div class="warnline" style="margin-top:14px">${ic('alert')}<span>LIFT does not give medical advice. Stop if it hurts, and ask a doctor if you're ill or injured.</span></div>
+    <p class="xs mut center" style="margin-top:14px">LIFT · version 4 · ${legalLinks()}</p>
   </div>`;
 };
-function editBody(){
-  const p = S.profile;
-  modal(`<div class="row between"><h2 style="margin:0">Body & calorie goal</h2>${closeBtn()}</div>
-    ${bodyForm()}
-    <p class="small mut" style="margin:14px 0 6px">Or set your own goals (leave empty to calculate)</p>
-    <div class="grid2"><label class="fld"><span class="xs mut">Calories / day</span><input id="kg_k" class="txt" inputmode="numeric" value="${p.kcalGoal ?? ''}" placeholder="auto"></label><label class="fld"><span class="xs mut">Protein g / day</span><input id="kg_p" class="txt" inputmode="numeric" value="${p.proteinGoal ?? ''}" placeholder="auto"></label></div>
-    <button class="btn pri block" style="margin-top:14px" onclick="saveBody()">Save</button>`);
-}
-function saveBody(){
-  readBodyForm();
-  const k = parseInt($('#kg_k').value), pr = parseInt($('#kg_p').value);
-  S.profile.kcalGoal = k > 0 ? k : null; S.profile.proteinGoal = pr > 0 ? pr : null; setProfile('pu', Date.now());
-  closeModal(); render(); toast('Goals updated');
-}
-function addWeight(e){
-  e.preventDefault(); const v = parseFloat(($('#bw').value||'').replace(',','.'));
-  if(!v || v < 20 || v > 400) return toast('Enter your weight in kg');
-  upsert('body', {id:newId(), d:Date.now(), kg:v}); S.profile.weight = v; setProfile('pu', Date.now()); render(); toast('Weight logged');
-}
 function askReset(){
   modal(`<h2>Delete all data?</h2><p class="mut">All workouts, routines, food and settings are deleted from this device${acct.user ? ' and from your account' : ''}. This can't be undone.</p>
     <div class="grid2"><button class="btn" onclick="closeModal()">Keep</button><button class="btn danger" onclick="doReset()">Delete</button></div>`);
@@ -144,7 +118,7 @@ function askReset(){
 async function doReset(){
   const now = Date.now(); COLLS.forEach(k => S[k].forEach(x => S.del[x.id] = now));
   const keepDel = S.del, prem = S.profile.premium; S = blank(); S.del = keepDel; S.profile.premium = prem; S.profile.pu = now;
-  save(); stopRest(); closeModal(); toast('Data deleted'); go('train');
+  save(); stopRest(); closeModal(); toast('Data deleted'); go('home');
 }
 
 /* ---------- Backup & eksport ---------- */
@@ -170,7 +144,7 @@ function importJSON(){
         $('#doImp').onclick = () => {
           if(d.version >= 3){ mergeRemote(d); if(d.profile) Object.assign(S.profile, Object.fromEntries(SYNC_PROFILE.filter(k => k in d.profile).map(k => [k, d.profile[k]]))) }
           else { const keep = S; migrateV2(d); const migrated = S; S = keep; mergeRemote(migrated) }
-          S.profile.pu = Date.now(); save(); closeModal(); toast('Backup restored'); go('train') };
+          S.profile.pu = Date.now(); save(); closeModal(); toast('Backup restored'); go('home') };
       }catch(e){ toast('That file is not a valid LIFT backup') } };
     rd.readAsText(f) };
   inp.click();
@@ -192,7 +166,12 @@ function loadDemo(){
     [['Oats with milk','Breakfast',450,22,60,12],['Chicken & rice','Lunch',650,45,75,15],['Skyr','Snacks',180,24,12,1],['Salmon & potatoes','Dinner',700,40,55,30]].forEach(([n,m,k,p,c,f]) =>
       S.food.push(touch({id:newId(), date:day, meal:m, name:n, quick:{kcal:k + Math.round(Math.random()*80-40), p, c, f}}))) }
   for(let d = 0; d < 8; d++) S.body.push(touch({id:newId(), d:now - (56-d*7)*DAY, kg:Math.round((78 - d*0.3)*10)/10}));
-  S.workouts.sort((a,b) => a.start - b.start); save(); toast('Sample data loaded'); go('stats');
+  if(!S.goals.some(g => !g.done)){
+    upsert('goals', {id:newId(), type:'weight', start:78, target:75, created:now - 56*DAY, deadline:now + 40*DAY, done:null});
+    upsert('goals', {id:newId(), type:'lift', exId:'bench', reps:1, start:50, target:80, created:now - 50*DAY, deadline:now + 60*DAY, done:null});
+    upsert('goals', {id:newId(), type:'lift', exId:'pullup', reps:1, start:3, target:12, created:now - 50*DAY, deadline:null, done:null});
+  }
+  S.workouts.sort((a,b) => a.start - b.start); save(); toast('Sample data loaded'); go('home');
 }
 
 /* ---------- Premium ---------- */
@@ -200,7 +179,7 @@ function openPremium(from){ premFrom = from || ''; track('premium-view'); if(fro
 SCREENS.premium = app => {
   const yes = ic('check'), no = '<span class="no">—</span>', active = S.profile.premium && S.profile.premium.source === 'stripe';
   app.innerHTML = `<div class="wrap">
-    ${header(`<button class="iconbtn back" onclick="go(prevView || 'train')" aria-label="Back">${ic('chevL')}</button><h1>Premium</h1>`, '')}
+    ${header(`<button class="iconbtn back" onclick="go(prevView || 'home')" aria-label="Back">${ic('chevL')}</button><h1>Premium</h1>`, '')}
     ${active ? buyHTML() : ''}
     <div class="hero"><span class="pill">${ic('crown')} LIFT Premium</span>
       <h2 style="margin-top:12px">Train smarter. Eat smarter.</h2>

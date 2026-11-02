@@ -75,7 +75,7 @@ SCREENS.food = app => {
       <div class="grow">
         <div class="row between small"><span class="mut">Goal</span><b>${g.kcal} kcal</b></div>
         <div class="row between small"><span class="mut">Eaten</span><b>${Math.round(t.kcal)} kcal</b></div>
-        ${g.auto && !S.profile.weight ? `<button class="link xs" onclick="editBody()">${ic('target','xs')} Set your personal goal</button>` : ''}
+        ${g.auto && !S.profile.weight ? `<button class="link xs" onclick="editTargets()">${ic('target','xs')} Set your personal goal</button>` : ''}
       </div>
     </div>
     ${pr ? `<div class="card">${bar('p','Protein',g.p)}${bar('c','Carbs',g.c)}${bar('f','Fat',g.f)}</div>`

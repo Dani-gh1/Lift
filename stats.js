@@ -16,7 +16,8 @@ function prList(){
     .sort((a,b) => (b.e||0) - (a.e||0));
 }
 
-SCREENS.stats = app => {
+// Tegnes inde i Goals-skærmen (fanen "Stats")
+function renderStats(app){
   if(!isPremium()) return statsTeaser(app);
   const weeks = weeksBack(statRange), from = weeks[0];
   const ws = S.workouts.filter(w => w.start >= from);
@@ -34,9 +35,8 @@ SCREENS.stats = app => {
   const avgK = logged.length ? Math.round(logged.reduce((a,d) => a + d.y, 0) / logged.length) : 0;
   const avgP = logged.length ? Math.round(days.filter(d => dayTotals(d).t.kcal > 0).reduce((a,d) => a + dayTotals(d).t.p, 0) / logged.length) : 0;
   const hist = statEx ? exHistory(statEx) : [];
-  app.innerHTML = `<div class="wrap">
-    ${header(`<h1>Stats</h1>`, syncChip())}
-    <div class="chips">${[[4,'4 weeks'],[12,'12 weeks'],[52,'1 year']].map(([n,l]) => `<button class="chip ${statRange===n?'on':''}" onclick="statRange=${n};render()">${l}</button>`).join('')}</div>
+  app.innerHTML = `<div>
+    <div class="chips" style="margin-top:14px">${[[4,'4 weeks'],[12,'12 weeks'],[52,'1 year']].map(([n,l]) => `<button class="chip ${statRange===n?'on':''}" onclick="statRange=${n};render()">${l}</button>`).join('')}</div>
     ${!S.workouts.length ? `<div class="card center"><p class="mut">Log your first workout and your stats appear here.</p><button class="btn pri" onclick="go('train')">Go to Train</button></div>` : `
     <div class="grid2" style="margin-top:10px">
       <div class="stat"><span>Workouts</span><b>${ws.length}</b></div>
@@ -66,11 +66,10 @@ SCREENS.stats = app => {
   if(hist.length >= 2) drawLine($('#cE'), hist.map(h => ({x:h.d, y:Math.round(h.y*10)/10})));
   if(S.body.length >= 2) drawLine($('#cB'), S.body.slice().sort((a,b) => a.d - b.d).map(b => ({x:b.d, y:b.kg})));
   if(logged.length) drawBars($('#cK'), kcalDays);
-};
+}
 
 function statsTeaser(app){
-  app.innerHTML = `<div class="wrap">
-    ${header(`<h1>Stats</h1>`, syncChip())}
+  app.innerHTML = `<div style="margin-top:14px">
     <div class="hero"><span class="pill">${ic('crown')} Premium</span>
       <h2 style="margin-top:12px">See how much stronger you get</h2>
       <p class="mut">Your stats are built from every set you log. ${S.workouts.length ? `You already have <b class="neon">${S.workouts.length} workout${S.workouts.length>1?'s':''}</b> ready to analyse.` : ''}</p></div>

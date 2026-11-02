@@ -1,6 +1,6 @@
 // LIFT service worker – virker offline
-const CACHE = 'lift-v12';
-const ASSETS = ['./', './index.html', './index.html?app', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.svg', './terms.html', './privacy.html', './legal.css', './styles.css?v=12', './data.js?v=12', './core.js?v=12', './train.js?v=12', './food.js?v=12', './stats.js?v=12', './profile.js?v=12'];
+const CACHE = 'lift-v13';
+const ASSETS = ['./', './index.html', './index.html?app', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.svg', './terms.html', './privacy.html', './legal.css', './styles.css?v=13', './data.js?v=13', './core.js?v=13', './train.js?v=13', './food.js?v=13', './stats.js?v=13', './goals.js?v=13', './home.js?v=13', './profile.js?v=13'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())) });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())) });
 self.addEventListener('fetch', e => {

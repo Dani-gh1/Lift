@@ -7,9 +7,11 @@ Mobile-first web app (PWA) for everyone who trains: workout log that remembers w
 |---|---|
 | `data.js` | **Øvelser, programmer, opvarmning, priser og indstillinger.** Her tilføjer du nye programmer/øvelser (se forklaringen øverst i filen). |
 | `core.js` | Data, synkronisering med kontoen, login, betaling, fælles hjælpere. |
-| `train.js` | Træningslog (repcount), rutiner, skabeloner, historik. |
+| `train.js` | Træningslog (repcount), rutiner, skabeloner, historik, kropsvægt. |
 | `food.js` | Kalorier, søgning, stregkode-scanning, makro- og mikronæringsstoffer. |
-| `stats.js` | Statistik (Premium). |
+| `home.js` | Home: overblik over i dag, ugen og mål. |
+| `goals.js` | Mål: daglige/ugentlige mål og egne mål (kropsvægt, øvelser) med fremgang. |
+| `stats.js` | Statistik (Premium) – vises som fane under Goals. |
 | `profile.js` | Opret konto, Premium-tilbud, profil, mål, kropsvægt, backup. |
 | `styles.css` | Design. |
 | `index.html` | Skal der indlæser filerne. |

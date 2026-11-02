@@ -301,3 +301,82 @@ input.num.sm{height:44px;width:58px;font-size:16px}
 .perk .bi{width:42px;height:42px;border-radius:12px;background:var(--neonDim);color:var(--neon);display:flex;align-items:center;justify-content:center;flex:none}
 .perk b{display:block;font-size:16px}
 .offer .btn.pri{margin-top:6px}
+
+/* ===================== LIFT v4 – roligere, mere overskueligt ===================== */
+:root{--card:#141916;--line:#222b26;--bg2:#101412}
+h1,h2,h3{font-family:Inter,system-ui,sans-serif;font-weight:800;letter-spacing:-.2px}
+h1{font-size:27px}h2{font-size:21px}h3{font-size:17px}
+.card{border-color:transparent;background:var(--card);border-radius:20px}
+.hdr{padding-bottom:6px}
+.hdr h1{font-size:28px;line-height:1.1}
+.ell{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.right{text-align:right;flex:none}
+.ok{color:var(--neon)}.warn{color:var(--warn)}
+/* sektion-overskrift */
+.sect{display:flex;align-items:center;justify-content:space-between;margin:24px 2px 8px;min-height:32px}
+.sect > span:first-child{font-size:13px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--mut)}
+.sect .link{padding:0;min-height:32px;font-size:14px}
+/* gem-status (lille ikon) */
+.syncbtn{width:40px;height:40px;flex:none;border-radius:50%;border:0;background:var(--card);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--mut)}
+.syncbtn .ic{width:20px;height:20px}
+.syncbtn.ok{color:var(--neon)}.syncbtn.warn{color:var(--warn)}.syncbtn.busy{color:var(--txt);animation:pulse .8s infinite alternate}
+/* ikon-firkant */
+.bi{width:44px;height:44px;border-radius:14px;background:var(--neonDim);color:var(--neon);display:flex;align-items:center;justify-content:center;flex:none}
+.bi.sm{width:36px;height:36px;border-radius:11px}
+.bi.done{background:var(--neon);color:#03130a}
+.bi.gold{background:rgba(255,204,51,.13);color:var(--warn)}
+/* fliser (Home) */
+.tile{display:block;width:100%;text-align:left;background:var(--card);border:0;border-radius:20px;padding:16px;margin:10px 0;color:var(--txt);font:inherit;cursor:pointer}
+.tile.hl{box-shadow:0 0 0 1.5px var(--neon) inset}
+.tile > .row{gap:12px;margin-bottom:12px}
+.tile > .row b{display:block;font-size:17px}
+.tile .grid2{margin-top:0}
+.tile.food{display:flex;gap:16px;align-items:center}
+.tile.empty{display:flex;gap:12px;align-items:center}
+.tile.empty b{display:block}
+.tile .link{padding:0;min-height:36px}
+.ring.sm{width:96px;height:96px}.ring.sm > div{width:78px;height:78px;background:var(--card)}.ring.sm b{font-size:19px}
+.track{height:8px;border-radius:9px;background:var(--line);overflow:hidden;margin:6px 0}
+.track i{display:block;height:100%;background:var(--neon);border-radius:9px;transition:width .4s}
+.track.big{height:12px;margin:8px 0}
+.track.thin{height:6px;margin:5px 0 3px}
+.tile .days7{margin-top:10px}
+/* listerækker */
+.lrow{display:flex;align-items:center;gap:12px;width:100%;min-height:62px;padding:10px 12px;margin:8px 0;background:var(--card);border:0;border-radius:16px;color:var(--txt);font:inherit;text-align:left;cursor:pointer}
+.lrow b{display:block;font-size:15.5px}
+.lrow .xs{display:block}
+.lrow.flat{background:transparent;padding:8px 0;margin:2px 0;min-height:52px}
+.lrow.static{cursor:default}
+.lrow.promo{background:linear-gradient(135deg,#1a2a1f,#141916)}
+.lrow .lmain{display:flex;align-items:center;gap:12px;flex:1;min-width:0;background:none;border:0;color:var(--txt);font:inherit;text-align:left;cursor:pointer;padding:0;min-height:44px}
+.playdot{width:36px;height:36px;border-radius:50%;background:var(--neon);color:#03130a;display:flex;align-items:center;justify-content:center;flex:none}
+.playdot .ic{width:15px;height:15px;margin-left:2px}
+.iconbtn.flat{background:transparent;border-color:transparent}
+.btn.subtle{background:transparent;border-color:var(--line);color:var(--mut);margin-top:4px}
+.card.empty .lrow{background:var(--bg2)}
+/* mål */
+.card.goal{display:block;width:100%;text-align:left;border:0;color:var(--txt);font:inherit;cursor:pointer;padding:16px}
+.card.goal .row{gap:12px}
+.card.goal b{display:block;font-size:16px}
+.pct{font-size:20px;font-weight:800;color:var(--neon);flex:none}
+.card.targets{padding:6px 16px}
+.trow{display:flex;gap:12px;align-items:center;padding:10px 0}
+.trow + .trow{border-top:1px solid var(--line)}
+.gbig{display:flex;gap:18px;align-items:center;margin:14px 0}
+.card.goalhit{box-shadow:0 0 0 1.5px var(--warn) inset}
+.card.goalhit .bi{background:rgba(255,204,51,.15);color:var(--warn)}
+/* faneknapper (Goals / Stats) */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--card);border-radius:14px;padding:4px;margin-top:6px}
+.seg button{min-height:42px;border:0;border-radius:11px;background:transparent;color:var(--mut);font:700 15px Inter;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.seg button.on{background:var(--bg2);color:var(--txt);box-shadow:0 1px 0 rgba(255,255,255,.04)}
+/* kropsvægt */
+.wcard .big{font-size:34px;font-weight:800;letter-spacing:-.5px}
+.wcard .big small{font-size:16px;color:var(--mut);font-weight:700}
+.spark{flex:none;margin-left:8px}
+/* kontakt */
+.toggle{width:46px;height:28px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.toggle:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle.on{background:var(--neon)}.toggle.on:after{transform:translateX(18px)}
+/* bundmenu med 5 faner */
+nav.tabs button{font-size:11.5px;min-height:62px}
+nav.tabs button .ic{width:24px;height:24px}

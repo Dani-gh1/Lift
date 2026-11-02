@@ -38,36 +38,76 @@ function weekDaysHTML(){
 }
 const durText = ms => { const m = Math.max(1, Math.round(ms/60000)); return m >= 60 ? `${Math.floor(m/60)} h ${m%60} min` : `${m} min` };
 
-/* ---------- Forside: Træning ---------- */
+/* ---------- Træning-fanen ---------- */
+function nextRoutine(){
+  // den rutine, der er længst siden man har lavet
+  if(!S.routines.length) return null;
+  const last = id => { for(let i = S.workouts.length-1; i >= 0; i--) if(S.workouts[i].routineId === id) return S.workouts[i].start; return 0 };
+  return S.routines.slice().sort((a,b) => last(a.id) - last(b.id))[0];
+}
+const workoutRow = w => `<button class="lrow" onclick="showWorkout('${w.id}')"><span class="grow" style="min-width:0"><b>${esc(w.name)}</b><span class="xs mut ell">${w.ex.map(e => esc(exInfo(e.id).n)).join(', ')}</span></span><span class="xs mut right">${dk(w.start)}<br>${setCount(w)} sets</span></button>`;
 SCREENS.train = app => {
-  const recent = S.workouts.slice(-5).reverse();
-  const tw = thisWeek().length, goal = S.profile.weeklyGoal || 3;
+  const recent = S.workouts.slice(-4).reverse();
   app.innerHTML = `<div class="wrap">
-    ${header(logoHTML(), syncChip())}
-    ${S.current ? `<div class="card hl"><div class="banner"><span class="bi">${ic('timer')}</span><div class="grow"><h3 style="margin:0">Workout in progress</h3><p class="small mut">${esc(S.current.name)} · started ${durText(Date.now()-S.current.start)} ago</p></div></div>
+    ${header(`<h1>Train</h1>`, syncChip())}
+    ${S.current ? `<div class="card hl"><div class="banner"><span class="bi">${ic('timer')}</span><div class="grow"><b>Workout in progress</b><p class="small mut">${esc(S.current.name)} · ${durText(Date.now()-S.current.start)}</p></div></div>
       <button class="btn pri block" style="margin-top:10px" onclick="go('workout')">${ic('play')} Continue workout</button></div>`
     : `<button class="btn pri block big" onclick="startWorkout()">${ic('plus')} Start empty workout</button>`}
-    <div class="card">
-      <div class="row between"><h3 style="margin:0">This week</h3><span class="small"><b class="neon">${tw}</b><span class="mut"> of ${goal} workouts</span> · ${ic('flame','sm')} <b>${weekStreak()}</b> <span class="mut">wk streak</span></span></div>
-      ${weekDaysHTML()}
-    </div>
-    <div class="row between" style="margin-top:18px"><h2 style="margin:0">My routines</h2><button class="btn sm" onclick="editRoutine()">${ic('plus','sm')} New</button></div>
-    ${S.routines.length ? S.routines.map(r => `<div class="card routine">
-        <div class="row between"><div class="grow" style="min-width:0"><h3 style="margin:0">${esc(r.name)}</h3><p class="xs mut" style="margin:2px 0 0">${r.ex.map(e => esc(exInfo(e.id).n)).join(' · ')}</p></div>
-        <button class="iconbtn" onclick="routineMenu('${r.id}')" aria-label="More for ${esc(r.name)}">${ic('dots')}</button></div>
-        <button class="btn sm pri block" style="margin-top:10px" onclick="startWorkout('${r.id}')">${ic('play','sm')} Start</button></div>`).join('')
-      : `<p class="small mut">Save the workouts you repeat as routines – then you can start them with one tap. Or start from a template below.</p>`}
-    <h2 style="margin-top:18px">Templates</h2>
-    <div class="hscroll">${TEMPLATES.map(t => `<button class="tcard" onclick="templateMenu('${t.id}')"><span class="xs neon">${esc(t.tag)}</span><b>${esc(t.name)}</b><span class="xs mut">${t.ex.length} exercises</span></button>`).join('')}</div>
-    <h2 style="margin-top:18px">History</h2>
-    ${recent.length ? recent.map(w => `<button class="card prog" onclick="showWorkout('${w.id}')">
-        <div class="row between"><b>${esc(w.name)}</b><span class="xs mut">${weekday(w.start)}</span></div>
-        <p class="xs mut" style="margin:4px 0 0">${durText((w.end||w.start)-w.start)} · ${setCount(w)} sets${volumeOf(w) ? ` · ${Math.round(volumeOf(w)).toLocaleString('en-GB')} kg` : ''}</p>
-        <p class="xs" style="margin:4px 0 0">${w.ex.map(e => esc(exInfo(e.id).n)).join(', ')}</p></button>`).join('')
-      : `<div class="card center"><p class="mut">No workouts yet. Tap <b>Start empty workout</b> and add your first exercise – it takes 10 seconds.</p></div>`}
-    ${S.workouts.length > 5 ? `<button class="btn ghost block" onclick="allHistory()">See all ${S.workouts.length} workouts</button>` : ''}
+
+    <div class="sect"><span>My routines</span><button class="link" onclick="editRoutine()">${ic('plus','xs')} New</button></div>
+    ${S.routines.length ? S.routines.map(r => `<div class="lrow"><button class="lmain" onclick="startWorkout('${r.id}')" aria-label="Start ${esc(r.name)}"><span class="playdot">${ic('play','sm')}</span><span class="grow" style="min-width:0"><b>${esc(r.name)}</b><span class="xs mut ell">${r.ex.map(e => esc(exInfo(e.id).n)).join(' · ')}</span></span></button><button class="iconbtn flat" onclick="routineMenu('${r.id}')" aria-label="More for ${esc(r.name)}">${ic('dots')}</button></div>`).join('')
+      : `<p class="small mut">Routines are workouts you repeat. Make your own, or start from a template.</p>`}
+    <button class="btn sm block subtle" onclick="openTemplates()">${ic('layers','sm')} Browse templates</button>
+
+    <div class="sect"><span>Body weight</span>${S.body.length ? `<button class="link" onclick="openWeight()">History</button>` : ''}</div>
+    ${weightCard()}
+
+    <div class="sect"><span>History</span>${S.workouts.length > 4 ? `<button class="link" onclick="allHistory()">See all ${S.workouts.length}</button>` : ''}</div>
+    ${recent.length ? recent.map(workoutRow).join('') : `<p class="small mut">Your finished workouts show up here.</p>`}
   </div>`;
 };
+function openTemplates(){
+  modal(`<div class="row between"><h2 style="margin:0">Templates</h2>${closeBtn()}</div>
+    <p class="small mut">Ready-made workouts. Start one now, or add it to your routines.</p>
+    ${TEMPLATES.map(t => `<button class="lrow" onclick="templateMenu('${t.id}')"><span class="grow" style="min-width:0"><b>${esc(t.name)}</b><span class="xs mut">${esc(t.tag)} · ${t.ex.length} exercises</span></span>${ic('chevR','sm')}</button>`).join('')}`);
+}
+
+/* ---------- Kropsvægt ---------- */
+const weights = () => S.body.slice().sort((a,b) => a.d - b.d);
+function spark(vals, w=120, h=36){
+  if(vals.length < 2) return '';
+  const mn = Math.min(...vals), mx = Math.max(...vals), r = (mx - mn) || 1;
+  const pts = vals.map((v,i) => `${(i/(vals.length-1)*w).toFixed(1)},${(h - 4 - (v-mn)/r*(h-8)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="#39ff7a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function weightCard(){
+  const ws = weights(), cur = ws[ws.length-1];
+  const ago = ws.filter(b => b.d <= Date.now() - 28*DAY).pop() || ws[0];
+  const diff = cur && ago && ago !== cur ? cur.kg - ago.kg : null;
+  const wg = (S.goals||[]).find(g => g.type === 'weight' && !g.done);
+  return `<div class="card wcard">
+    ${cur ? `<div class="row between"><div><span class="big">${fmt(cur.kg)}<small> kg</small></span>
+        <div class="xs mut">${dk(cur.d)}${diff != null ? ` · <b class="${Math.abs(diff) < .05 ? '' : 'neon'}">${diff > 0 ? '+' : ''}${fmt(diff)} kg</b> since ${dk(ago.d)}` : ''}</div>
+        ${wg ? `<div class="xs mut" style="margin-top:2px">${ic('target','xs')} Goal ${fmt(wg.target)} kg · ${fmt(Math.abs(cur.kg - wg.target))} kg to go</div>` : ''}</div>
+        ${spark(ws.slice(-12).map(b => b.kg))}</div>` : `<p class="small mut" style="margin-top:0">Log your weight now and then to see how it changes.</p>`}
+    <form class="row" style="margin-top:10px" onsubmit="logWeight(event)"><input id="bw" class="txt grow" inputmode="decimal" placeholder="${cur ? "Today's weight" : 'Your weight'}" aria-label="Body weight in kg"><span class="mut">kg</span><button class="btn sm pri">Log</button></form>
+  </div>`;
+}
+function logWeight(e){
+  e.preventDefault(); const v = parseFloat(($('#bw').value||'').replace(',','.'));
+  if(!v || v < 20 || v > 400) return toast('Enter your weight in kg');
+  const today = dayKey(), same = S.body.find(b => dayKey(b.d) === today);
+  if(same){ same.kg = v; same.d = Date.now(); upsert('body', same) } else upsert('body', {id:newId(), d:Date.now(), kg:v});
+  S.profile.weight = v; setProfile('pu', Date.now()); track('weight-log');
+  const reached = typeof checkGoals === 'function' ? checkGoals() : [];
+  render(); if(reached.length) celebrate(reached); else toast('Weight logged');
+}
+function openWeight(){
+  const ws = weights().reverse();
+  modal(`<div class="row between"><h2 style="margin:0">Body weight</h2>${closeBtn()}</div>
+    ${ws.map(b => `<div class="row between" style="padding:10px 0;border-top:1px solid var(--line)"><span class="small mut">${weekday(b.d)}</span><span class="row" style="gap:6px"><b>${fmt(b.kg)} kg</b><button class="iconbtn flat" onclick="removeItem('body','${b.id}');openWeight();render()" aria-label="Delete ${dk(b.d)}">${ic('trash','sm')}</button></span></div>`).join('')}
+    ${!isPremium() && ws.length >= 2 ? `<p class="xs mut" style="margin-top:10px">${ic('lock','xs')} See the full weight chart under Goals → Stats with Premium.</p>` : ''}`);
+}
 
 /* ---------- Start / aktiv træning ---------- */
 let lastPop = null;
@@ -97,7 +137,7 @@ SCREENS.workout = app => {
   const c = S.current; if(!c){ view = 'train'; return render() }
   const all = c.ex.reduce((a,e) => a + e.sets.length, 0), done = c.ex.reduce((a,e) => a + doneSets(e).length, 0);
   app.innerHTML = `<div class="wrap" style="padding-bottom:150px">
-    ${header(`<button class="iconbtn back" onclick="go('train')" aria-label="Back (workout keeps running)">${ic('chevL')}</button><div class="grow" style="min-width:0"><input class="titlein" value="${esc(c.name)}" aria-label="Workout name" onchange="S.current.name=this.value.trim()||'Workout';lsSave()"><div class="xs mut" id="wTimer">${durText(Date.now()-c.start)} · ${done}/${all} sets</div></div>`,
+    ${header(`<button class="iconbtn back" onclick="go(prevView || 'home')" aria-label="Back (workout keeps running)">${ic('chevL')}</button><div class="grow" style="min-width:0"><input class="titlein" value="${esc(c.name)}" aria-label="Workout name" onchange="S.current.name=this.value.trim()||'Workout';lsSave()"><div class="xs mut" id="wTimer">${durText(Date.now()-c.start)} · ${done}/${all} sets</div></div>`,
       `<button class="btn sm pri" onclick="finishWorkout()">Finish</button>`)}
     ${c.ex.map((e,i) => { const x = exInfo(e.id), lp = lastPerformance(e.id), sug = suggestion(e.id, e.target);
       return `<section class="ex ${e.sets.length && e.sets.every(s=>s.done)?'alldone':''}">
@@ -155,7 +195,7 @@ function exMenu(i){
 function moveEx(i,d){ const a = S.current.ex; [a[i], a[i+d]] = [a[i+d], a[i]]; lsSave(); closeModal(); render() }
 function discardWorkout(){
   modal(`<h2>Discard workout?</h2><p class="mut">Nothing from this workout will be saved.</p>
-    <div class="grid2"><button class="btn" onclick="closeModal()">Keep going</button><button class="btn danger" onclick="S.current=null;stopRest();lsSave();go('train')">Discard</button></div>`);
+    <div class="grid2"><button class="btn" onclick="closeModal()">Keep going</button><button class="btn danger" onclick="S.current=null;stopRest();lsSave();go(prevView || 'home')">Discard</button></div>`);
 }
 setInterval(() => { if(view === 'workout' && S.current){ const t = $('#wTimer'); if(t){ const c = S.current, all = c.ex.reduce((a,e)=>a+e.sets.length,0), d = c.ex.reduce((a,e)=>a+doneSets(e).length,0); t.textContent = `${durText(Date.now()-c.start)} · ${d}/${all} sets` } } }, 15000);
 
@@ -174,7 +214,9 @@ function finishWorkout(force){
     const v = x.t==='w' ? e1rm(top) : top.reps;
     if(v > b.v + 0.01) prs.push({n:x.n, now:setText(x, top), before:setText(x, b.s)}) });
   upsert('workouts', w);
-  S.summary = {id:w.id, prs, ros:ROS[Math.floor(Math.random()*ROS.length)], fromRoutine:!!c.routineId && !!S.routines.find(r => r.id === c.routineId)};
+  const reached = typeof checkGoals === 'function' ? checkGoals().map(g => goalState(g).title) : [];
+  const wk = thisWeek().length, wg = S.profile.weeklyGoal || 3;
+  S.summary = {id:w.id, prs, goals:reached, weekly: wk === wg ? wg : 0, ros:ROS[Math.floor(Math.random()*ROS.length)], fromRoutine:!!c.routineId && !!S.routines.find(r => r.id === c.routineId)};
   S.current = null; stopRest(); lsSave();
   track('workout-complete'); if(S.workouts.length === 1) trackOnce('first-workout'); if(S.workouts.length === 10) trackOnce('ten-workouts');
   go('done');
@@ -185,10 +227,12 @@ SCREENS.done = app => {
   app.innerHTML = `<div class="wrap" style="padding-top:var(--top)">
     <div class="done-hero"><div class="badge-big">${ic(s.prs.length ? 'trophy' : 'check')}</div><h1>${esc(s.ros)}</h1><p class="mut">${esc(w.name)} · ${weekday(w.start)}</p></div>
     <div class="grid3"><div class="stat"><span>Time</span><b>${durText(w.end-w.start)}</b></div><div class="stat"><span>Sets</span><b>${setCount(w)}</b></div><div class="stat"><span>Volume</span><b>${vol ? Math.round(vol).toLocaleString('en-GB') + ' kg' : '–'}</b></div></div>
+    ${(s.goals||[]).length ? `<div class="card goalhit"><div class="banner"><span class="bi">${ic('trophy')}</span><div class="grow"><b>Goal reached!</b>${s.goals.map(t => `<p class="small" style="margin:2px 0 0">${esc(t)}</p>`).join('')}</div></div></div>` : ''}
+    ${s.weekly ? `<div class="card"><div class="banner"><span class="bi">${ic('flame')}</span><div class="grow"><b>Weekly goal reached</b><p class="small mut" style="margin:2px 0 0">${s.weekly} of ${s.weekly} workouts this week. Streak: ${weekStreak()} week${weekStreak()===1?'':'s'}.</p></div></div></div>` : ''}
     ${s.prs.length ? `<h3 style="margin-top:18px">New records 🏆</h3>${s.prs.map(r => `<div class="pr">${ic('trophy')}<span class="grow"><b>${esc(r.n)}</b><br><span class="xs mut">before: ${esc(r.before)}</span></span><b>${esc(r.now)}</b></div>`).join('')}` : ''}
     <div class="card"><h3>Your workout</h3>${w.ex.map(e => { const x = exInfo(e.id); return `<div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span class="small">${esc(x.n)}</span><span class="small mut">${e.sets.map(st => x.t==='w' ? `${fmt(st.kg)}×${st.reps}` : st.reps).join(', ')}</span></div>` }).join('')}</div>
     ${s.fromRoutine ? '' : `<button class="btn block" onclick="saveAsRoutine('${w.id}')">${ic('list')} Save as routine</button>`}
-    <button class="btn pri block" style="margin-top:10px" onclick="S.summary=null;lsSave();go('train')">Done</button>
+    <button class="btn pri block" style="margin-top:10px" onclick="S.summary=null;lsSave();go(prevView || 'home')">Done</button>
   </div>`;
 };
 
