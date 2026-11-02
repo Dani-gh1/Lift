@@ -145,7 +145,7 @@ Supabase → **Edge Functions** → **Secrets**. Tilføj disse 6 (navn til venst
 
 ## Del 7 – Test betaling (5 min)
 
-1. Åbn **https://flowersmokeapp.github.io/Lift/?app** på din telefon.
+1. Åbn **https://flowersmokeapp.github.io/Lift/?app&test** på din telefon. `&test` er vigtigt: indtil betaling er slået til for alle (`paymentsLive: true` i `data.js`), vises login og betaling kun i testtilstand.
 2. **Premium** → skriv din e-mail → **Send** → åbn mailen fra Supabase på **samme telefon** → tryk **Sign in**-linket. Appen åbner, og du er logget ind.
 3. Vælg *Monthly* eller *Yearly* → **Start 7-day free trial**.
 4. På Stripes side bruger du testkortet:
