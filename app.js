@@ -292,7 +292,7 @@ function renderOnboarding(app){
     <p class="mut">Get a ready-made program and know exactly what to do every time. Answer 4 quick questions and we'll find your program.</p>
     <div style="flex:1"></div>
     <button class="btn pri block" onclick="ob.step=1;render()">Get started</button>
-    <p class="xs mut center">Takes less than 1 minute. No account needed.</p>`;
+    <p class="xs mut center">Takes less than 1 minute. No account needed.<br>${legalLinks()}</p>`;
   else if(ob.step === 1) body = `<h2>What's your goal?</h2>${Object.entries(MAAL).map(([k,g])=>opt('goal',k,g.icon,g.n,g.d)).join('')}`;
   else if(ob.step === 2) body = `<h2>Have you tried strength training before?</h2>
     ${opt('experience','aldrig','sprout','Never','Totally new – that is perfect')}${opt('experience','lidt','star','A little','Tried it a few times')}`;
@@ -788,7 +788,7 @@ function renderProfile(app){
     ${testTools() ? `<div class="card" style="border-style:dashed"><h3>For testing</h3><p class="xs mut">Only visible when the app is opened with ?test in the address (or CONFIG.showTestTools is true).</p>
       <div class="grid2"><button class="btn sm" onclick="S.profile.premium=S.profile.premium?null:'test';save();render()">${pr?'Turn Premium off':'Turn Premium on'}</button><button class="btn sm" onclick="loadDemo()">Sample data</button></div></div>` : ''}
     <div class="warnline">${ic('alert')}<span>LIFT does not give medical advice. Stop if it hurts, and ask a doctor if you're ill or injured.</span></div>
-    <p class="xs mut center" style="margin-top:14px">LIFT · version 2</p>
+    <p class="xs mut center" style="margin-top:14px">LIFT · version 2 · ${legalLinks()}</p>
   </div>`;
 }
 function setDays(n){ S.profile.daysPerWeek = n; S.profile.calDays = null; save(); render() }
@@ -908,6 +908,7 @@ function loginHTML(){
     <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':'Send'}</button></div></form>`;
 }
 const fmtDate = d => d ? dkLong(d) : '';
+const legalLinks = () => `<a href="terms.html" class="neon">Terms</a> · <a href="privacy.html" class="neon">Privacy</a>`;
 
 /* ============================== PREMIUM ============================== */
 let plan = 'year', premFrom = '';
@@ -947,6 +948,7 @@ function buyHTML(){
     <button class="btn block" onclick="openPortal()" ${acct.busy?'disabled':''}>Manage subscription</button></div>`;
   return `${acct.user ? `<button class="btn pri block" style="margin-top:6px" onclick="startCheckout()" ${acct.busy?'disabled':''}>${acct.busy?'Opening secure payment…':`Start ${CONFIG.trialDays}-day free trial`}</button>
       <p class="xs mut center">Then ${plan==='year'?CONFIG.priceYear+' '+CONFIG.currency+' per year':CONFIG.priceMonth+' '+CONFIG.currency+' per month'}. Cancel anytime before the trial ends and you pay nothing. Secure payment by Stripe.</p>
+      <p class="xs mut center">By starting the trial you accept our <a href="terms.html" class="neon">Terms</a> and <a href="privacy.html" class="neon">Privacy Policy</a>.</p>
       <p class="xs mut center">Signed in as ${esc(acct.user.email)} · <button class="link" style="min-height:0;padding:0;font-size:12.5px" onclick="signOut()">Sign out</button></p>`
     : `<div class="card"><h3>${ic('user','sm')} Sign in to start</h3>${loginHTML()}</div>`}`;
 }
@@ -959,7 +961,8 @@ function waitlistHTML(){
         : CONFIG.waitlistUrl ? `<p class="small mut">Get notified when Premium opens.</p><a class="btn block" href="${esc(CONFIG.waitlistUrl)}" target="_blank" rel="noopener" onclick="S.profile.waitlist={email:'(form)',at:new Date().toISOString()};save();track('waitlist-click')">Join the waitlist</a>`
         : `<p class="small mut">Get notified when Premium opens.</p><form onsubmit="joinWaitlist(event)" class="row"><input class="txt grow" type="email" required placeholder="you@email.com" aria-label="Your email" id="wlmail"><button class="btn sm pri" style="min-height:52px">Join</button></form>`}
     </div>
-    <p class="xs mut center">You won't be charged. Payments are not switched on yet.</p>`;
+    <p class="xs mut center">You won't be charged. Payments are not switched on yet.</p>
+    <p class="xs mut center">${legalLinks()}</p>`;
 }
 function tryFree(){ S.profile.interest = {plan, at:new Date().toISOString(), from:premFrom}; save(); track('trial-click-' + plan); render() }
 function joinWaitlist(e){ e.preventDefault(); const m = $('#wlmail').value.trim(); if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
