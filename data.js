@@ -36,7 +36,7 @@ const CONFIG = {
   // og skriv din kode her, fx 'lift-app'. Tom = ingen måling.
   goatcounterCode: 'liftapp',
   // Venteliste: link til fx en gratis Tally- eller Google-formular. Tom = gem kun interesse lokalt.
-  waitlistUrl: '',
+  waitlistUrl: 'https://tally.so/r/gbaZlJ',
   // Testknapper i Profil (slå Premium til, eksempeldata). false = skjult for brugere.
   // Du kan stadig se dem ved at åbne appen med ?test, fx .../Lift/?app&test
   showTestTools: false,
