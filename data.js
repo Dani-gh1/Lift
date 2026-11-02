@@ -42,8 +42,11 @@ const CONFIG = {
   showTestTools: false,
   // Betaling og login (Supabase + Stripe). Tom = Premium-siden viser venteliste i stedet.
   // Se SETUP.md for hvordan du får dem. Begge værdier må gerne være offentlige.
-  supabaseUrl: '',        // fx 'https://abcdefgh.supabase.co'
-  supabaseAnonKey: '',    // "anon public" nøglen fra Supabase
+  supabaseUrl: 'https://akcqdkekmxfpudicacod.supabase.co',
+  supabaseAnonKey: 'sb_publishable_RskGvaF5kH3o-d-UEbFRaA__2AU-Di6',   // offentlig nøgle – må gerne ses
+  // false = login/betaling vises kun i testtilstand (åbn appen med ?app&test). Alle andre ser ventelisten.
+  // Sæt til true, når del 5–7 i SETUP.md virker.
+  paymentsLive: false,
 };
 
 const UDSTYR = {stang:'Barbell + rack', baenk:'Bench', haandvaegte:'Dumbbells', kettlebell:'Kettlebell', elastik:'Resistance band', pullupbar:'Pull-up bar', maskiner:'Cables & machines'};

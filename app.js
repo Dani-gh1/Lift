@@ -815,7 +815,7 @@ function loadDemo(){
 /* ============================== KONTO & BETALING (Supabase + Stripe) ==============================
    Slås til ved at udfylde CONFIG.supabaseUrl og CONFIG.supabaseAnonKey i data.js (se SETUP.md).
    Kontoen bruges KUN til Premium. Træningsdata bliver på telefonen. */
-const payEnabled = () => !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
+const payEnabled = () => !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey && (CONFIG.paymentsLive || testTools()));
 let sb = null;
 const acct = {ready:false, user:null, sub:null, step:'email', email:'', busy:false};
 async function initAccount(){
