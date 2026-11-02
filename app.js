@@ -822,11 +822,12 @@ async function initAccount(){
   if(!payEnabled()) return;
   try{
     const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-    sb = mod.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false}});
+    sb = mod.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'implicit'}});
     const {data} = await sb.auth.getSession();
     acct.user = data.session?.user || null; acct.ready = true;
     sb.auth.onAuthStateChange((_e, sess) => { const before = acct.user?.id; acct.user = sess?.user || null; if(acct.user?.id !== before) refreshSub() });
     await refreshSub();
+    if(/[?&]signin=1/.test(location.search)){ window.history.replaceState(null, '', location.pathname + '?app'); if(acct.user){ track('signed-in'); toast('Signed in'); go('premium') } }
     handleCheckoutReturn();
   }catch(e){ console.warn('Account unavailable', e); acct.ready = true; render() }
 }
@@ -854,7 +855,7 @@ async function sendCode(e){
   const m = ($('#acEmail')?.value || '').trim();
   if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
   acct.busy = true; render();
-  const {error} = await sb.auth.signInWithOtp({email:m, options:{shouldCreateUser:true}});
+  const {error} = await sb.auth.signInWithOtp({email:m, options:{shouldCreateUser:true, emailRedirectTo: location.origin + location.pathname + '?app&signin=1'}});
   acct.busy = false;
   if(error){ toast(error.status === 429 ? 'Too many tries. Wait a minute and try again.' : 'Could not send the code. Check your email address.'); return render() }
   acct.email = m; acct.step = 'code'; render(); setTimeout(()=>$('#acCode')?.focus(), 50);
@@ -892,13 +893,13 @@ async function handleCheckoutReturn(){
 }
 function loginHTML(){
   if(!acct.ready) return `<p class="small mut">Connecting…</p>`;
-  if(acct.step === 'code') return `<form onsubmit="verifyCode(event)"><p class="small">We sent a code to <b>${esc(acct.email)}</b>. Enter it here:</p>
+  if(acct.step === 'code') return `<form onsubmit="verifyCode(event)"><p class="small">We sent an email to <b>${esc(acct.email)}</b>.</p><p class="small mut"><b>Tap the sign-in link</b> in the email – or, if the email shows a code, enter it here:</p>
     <input id="acCode" class="txt" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" aria-label="Code from email" style="letter-spacing:4px;font-size:22px;text-align:center">
     <button class="btn pri block" style="margin-top:10px" ${acct.busy?'disabled':''}>${acct.busy?'Checking…':'Sign in'}</button>
     <button type="button" class="link" onclick="acct.step='email';render()">Use another email or resend</button></form>`;
-  return `<form onsubmit="sendCode(event)"><p class="small mut">Sign in with your email to buy and keep Premium. No password – we send you a code. Your workouts stay on this phone.</p>
+  return `<form onsubmit="sendCode(event)"><p class="small mut">Sign in with your email to buy and keep Premium. No password – we email you a sign-in link. Your workouts stay on this phone.</p>
     <div class="row"><input id="acEmail" class="txt grow" type="email" autocomplete="email" required placeholder="you@email.com" aria-label="Your email" value="${esc(acct.email)}">
-    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':'Send code'}</button></div></form>`;
+    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':'Send'}</button></div></form>`;
 }
 const fmtDate = d => d ? dkLong(d) : '';
 

@@ -79,14 +79,11 @@ Tag delene i rækkefølge. Hver del virker for sig, så du kan stoppe efter hvil
    - *Enable Email provider*: **til**
    - *Email OTP Length*: **6**
    - Tryk **Save**.
-5. **Mail-skabeloner:** **Authentication** → **Emails** → fanen **Magic Link**. Erstat indholdet af *Message body* med:
-   ```html
-   <h2>Your LIFT code</h2>
-   <p>Enter this code in the app:</p>
-   <p style="font-size:28px;letter-spacing:4px"><b>{{ .Token }}</b></p>
-   ```
-   Tryk **Save**. Gør præcis det samme under fanen **Confirm signup**.
-6. **Adresse:** **Authentication** → **URL Configuration** → *Site URL* = `https://flowersmokeapp.github.io/Lift/` → **Save**.
+5. **Mails:** Du behøver ikke ændre noget. Supabases standardmail sender et **login-link**, som appen forstår.
+   *(Supabase kræver egen mail-afsender (SMTP) for at redigere skabelonerne. Det sætter du op i del 8, og så kan mailen også vise en 6-cifret kode. Koden er bedst, hvis appen er gemt på hjemmeskærmen på iPhone, for der åbner linket i Safari i stedet for i appen.)*
+6. **Adresser:** **Authentication** → **URL Configuration**:
+   - *Site URL* = `https://flowersmokeapp.github.io/Lift/` → **Save**
+   - Under *Redirect URLs* → **Add URL** → `https://flowersmokeapp.github.io/Lift/**` → **Save**
 7. **Nøgler til appen:** Tryk **Connect** øverst (eller **Project Settings → API Keys**). Kopiér:
    - **Project URL** (`https://xxxx.supabase.co`)
    - **anon / public key** (lang tekst der starter med `eyJ…`, eller `sb_publishable_…`)
@@ -149,7 +146,7 @@ Supabase → **Edge Functions** → **Secrets**. Tilføj disse 6 (navn til venst
 ## Del 7 – Test betaling (5 min)
 
 1. Åbn **https://flowersmokeapp.github.io/Lift/?app** på din telefon.
-2. **Premium** → skriv din e-mail → **Send code** → tjek mailen → skriv koden → **Sign in**.
+2. **Premium** → skriv din e-mail → **Send** → åbn mailen fra Supabase på **samme telefon** → tryk **Sign in**-linket. Appen åbner, og du er logget ind.
 3. Vælg *Monthly* eller *Yearly* → **Start 7-day free trial**.
 4. På Stripes side bruger du testkortet:
    - Kortnummer **4242 4242 4242 4242**
@@ -162,7 +159,8 @@ Supabase → **Edge Functions** → **Secrets**. Tilføj disse 6 (navn til venst
 
 | Problem | Løsning |
 |---|---|
-| Ingen kode i mailen | Tjek spam. Tjek at `{{ .Token }}` står i begge skabeloner (del 4, trin 5). Supabases standard-afsender kan kun sende få mails i timen, så vent lidt. |
+| Ingen mail | Tjek spam. Supabases standard-afsender kan kun sende få mails i timen, så vent lidt. |
+| Linket åbner, men du er ikke logget ind | Tjek *Redirect URLs* (del 4, trin 6). Åbn linket på samme enhed og i samme browser, som du bad om det fra. |
 | "Something went wrong" ved betaling | Supabase → Edge Functions → `create-checkout` → **Logs**. Tjek stavningen af nøglerne i del 6B. |
 | Betalt, men ingen Premium | Stripe → Webhooks → din destination → se om events fejler. Er JWT-verificering slået fra på `stripe-webhook` (del 5)? Er `STRIPE_WEBHOOK_SECRET` rigtig? |
 
@@ -171,8 +169,14 @@ Supabase → **Edge Functions** → **Secrets**. Tilføj disse 6 (navn til venst
 ## Del 8 – Før rigtige brugere
 
 1. **Egen mail-afsender** (Supabase sender kun få mails i timen):
-   1. Opret gratis konto på **https://resend.com**, og bekræft dit domæne.
-   2. Supabase → Authentication → Emails → **SMTP Settings** → indsæt Resends oplysninger.
+   - **Har du et domæne** (fx liftapp.dk): opret en gratis konto på **https://resend.com**, bekræft domænet, og indsæt Resends SMTP-oplysninger under Supabase → Authentication → Emails → **SMTP Settings**.
+   - **Uden domæne**: brug Gmail. Slå 2-trins-bekræftelse til på din Google-konto, og lav en *App-adgangskode* (myaccount.google.com/apppasswords). I Supabase SMTP: Host `smtp.gmail.com`, Port `465`, Username = din Gmail, Password = app-adgangskoden.
+   - Når SMTP er sat op: gå til **Authentication → Emails → Magic Link** og **Confirm signup**, og tilføj koden til mailen:
+     ```html
+     <h2>Your LIFT sign-in</h2>
+     <p><a href="{{ .ConfirmationURL }}">Tap here to sign in</a></p>
+     <p>Or enter this code in the app: <b style="font-size:24px;letter-spacing:4px">{{ .Token }}</b></p>
+     ```
 2. **Live-betaling:** I Stripe slår du *Test mode* FRA. Gentag del 3 (produkt, priser, nøgle) og del 6 med de nye `sk_live_…`- og `whsec_…`-værdier, og opdatér de 4 Stripe-secrets i Supabase.
 3. **Jura:** Lav handelsbetingelser og en privatlivspolitik, og link til dem. Brugere under 18 kan kræve forældres samtykke for at købe abonnement. Spørg evt. en rådgiver.
 4. **Testknapperne** ser kun du, når du åbner `…/Lift/?app&test`.
