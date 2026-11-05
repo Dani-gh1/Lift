@@ -6,7 +6,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 // ---- Fælles hjælpere (samme i alle tre funktioner) ----
 export const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { httpClient: Stripe.createFetchHttpClient() });
 export const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-// Adressen hvor appen ligger, fx https://flowersmokeapp.github.io/Lift/
+// Adressen hvor appen ligger, fx https://dani-gh1.github.io/Lift/
 export const APP_URL = Deno.env.get('APP_URL')!;
 
 export const cors = {

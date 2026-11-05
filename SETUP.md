@@ -1,7 +1,7 @@
 # LIFT – opsætning trin for trin
 
 > **Nyt i version 3 – gør dette:**
-> 1. **Kør den nye SQL:** Supabase → **SQL Editor** → **New query**. Indsæt hele [002_user_data.sql](https://github.com/FlowerSmokeapp/Lift/blob/main/supabase/migrations/002_user_data.sql) → **Run**. Den laver tabellen, hvor træninger og mad gemmes på kontoen.
+> 1. **Kør den nye SQL:** Supabase → **SQL Editor** → **New query**. Indsæt hele [002_user_data.sql](https://github.com/dani-gh1/Lift/blob/main/supabase/migrations/002_user_data.sql) → **Run**. Den laver tabellen, hvor træninger og mad gemmes på kontoen.
 > 2. **Opsæt egen mail-afsender (del 8, punkt 1).** Uden den får dine brugere sandsynligvis ikke login-mailen.
 > 3. **Når mail virker:** sæt `requireAccount: true` i `data.js` (eller bed Claude om det). Så skal alle oprette konto først.
 
@@ -9,7 +9,7 @@ Alt foregår i browseren. Du behøver ikke terminal eller programmer.
 Tag delene i rækkefølge. Hver del virker for sig, så du kan stoppe efter hvilken som helst.
 
 > **Sådan ændrer du `data.js` på GitHub** (bruges flere gange):
-> 1. Åbn https://github.com/FlowerSmokeapp/Lift/blob/main/data.js
+> 1. Åbn https://github.com/dani-gh1/Lift/blob/main/data.js
 > 2. Tryk på blyanten ✏️ (øverst til højre i filen).
 > 3. Ret linjen, og tryk den grønne **Commit changes…** → **Commit changes**.
 > 4. Vent ca. 2 minutter, og genindlæs appen.
@@ -78,7 +78,7 @@ Tag delene i rækkefølge. Hver del virker for sig, så du kan stoppe efter hvil
    - **Region:** *Central EU (Frankfurt)*
    - Tryk **Create new project**, og vent 1–2 minutter.
 3. **Opret tabellen:** Venstremenuen → **SQL Editor** → **+ New query**. Kopiér HELE indholdet af
-   https://github.com/FlowerSmokeapp/Lift/blob/main/supabase/migrations/001_subscriptions.sql
+   https://github.com/dani-gh1/Lift/blob/main/supabase/migrations/001_subscriptions.sql
    ind, og tryk **Run**. Der skal stå *Success. No rows returned*.
 4. **Login-kode i stedet for link:** Venstremenuen → **Authentication** → **Sign In / Providers** → **Email**:
    - *Enable Email provider*: **til**
@@ -87,8 +87,8 @@ Tag delene i rækkefølge. Hver del virker for sig, så du kan stoppe efter hvil
 5. **Mails:** Du behøver ikke ændre noget. Supabases standardmail sender et **login-link**, som appen forstår.
    *(Supabase kræver egen mail-afsender (SMTP) for at redigere skabelonerne. Det sætter du op i del 8, og så kan mailen også vise en 6-cifret kode. Koden er bedst, hvis appen er gemt på hjemmeskærmen på iPhone, for der åbner linket i Safari i stedet for i appen.)*
 6. **Adresser:** **Authentication** → **URL Configuration**:
-   - *Site URL* = `https://flowersmokeapp.github.io/Lift/` → **Save**
-   - Under *Redirect URLs* → **Add URL** → `https://flowersmokeapp.github.io/Lift/**` → **Save**
+   - *Site URL* = `https://dani-gh1.github.io/Lift/` → **Save**
+   - Under *Redirect URLs* → **Add URL** → `https://dani-gh1.github.io/Lift/**` → **Save**
 7. **Nøgler til appen:** Tryk **Connect** øverst (eller **Project Settings → API Keys**). Kopiér:
    - **Project URL** (`https://xxxx.supabase.co`)
    - **anon / public key** (lang tekst der starter med `eyJ…`, eller `sb_publishable_…`)
@@ -108,9 +108,9 @@ Gør dette 3 gange, én gang for hver funktion:
 
 | Funktionsnavn (skal staves præcis sådan) | Kode at kopiere |
 |---|---|
-| `create-checkout` | https://github.com/FlowerSmokeapp/Lift/blob/main/supabase/functions/create-checkout/index.ts |
-| `customer-portal` | https://github.com/FlowerSmokeapp/Lift/blob/main/supabase/functions/customer-portal/index.ts |
-| `stripe-webhook` | https://github.com/FlowerSmokeapp/Lift/blob/main/supabase/functions/stripe-webhook/index.ts |
+| `create-checkout` | https://github.com/dani-gh1/Lift/blob/main/supabase/functions/create-checkout/index.ts |
+| `customer-portal` | https://github.com/dani-gh1/Lift/blob/main/supabase/functions/customer-portal/index.ts |
+| `stripe-webhook` | https://github.com/dani-gh1/Lift/blob/main/supabase/functions/stripe-webhook/index.ts |
 
 1. Åbn kode-linket, og tryk på **Copy raw file**-ikonet (to firkanter øverst til højre i filen).
 2. Supabase → venstremenuen → **Edge Functions** → **Deploy a new function** → **Via Editor**.
@@ -143,7 +143,7 @@ Supabase → **Edge Functions** → **Secrets**. Tilføj disse 6 (navn til venst
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` fra del 6A |
 | `STRIPE_PRICE_MONTH` | Price ID for *MÅNED* |
 | `STRIPE_PRICE_YEAR` | Price ID for *ÅR* |
-| `APP_URL` | `https://flowersmokeapp.github.io/Lift/` |
+| `APP_URL` | `https://dani-gh1.github.io/Lift/` |
 | `TRIAL_DAYS` | `7` |
 
 *(`SUPABASE_URL` og `SUPABASE_SERVICE_ROLE_KEY` findes automatisk, dem skal du ikke tilføje.)*
@@ -152,7 +152,7 @@ Supabase → **Edge Functions** → **Secrets**. Tilføj disse 6 (navn til venst
 
 ## Del 7 – Test betaling (5 min)
 
-1. Åbn **https://flowersmokeapp.github.io/Lift/?app&test** på din telefon. `&test` er vigtigt: indtil betaling er slået til for alle (`paymentsLive: true` i `data.js`), vises login og betaling kun i testtilstand.
+1. Åbn **https://dani-gh1.github.io/Lift/?app&test** på din telefon. `&test` er vigtigt: indtil betaling er slået til for alle (`paymentsLive: true` i `data.js`), vises login og betaling kun i testtilstand.
 2. **Premium** → skriv din e-mail → **Send** → åbn mailen fra Supabase på **samme telefon** → tryk **Sign in**-linket. Appen åbner, og du er logget ind.
 3. Vælg *Monthly* eller *Yearly* → **Start 7-day free trial**.
 4. På Stripes side bruger du testkortet:
