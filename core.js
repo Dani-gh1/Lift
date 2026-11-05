@@ -55,6 +55,13 @@ const IC = {
   list:'<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
   dots:'<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+  chevD:'<path d="M6 9l6 6 6-6"/>',
+  arrowL:'<path d="M20 12H4M10 6l-6 6 6 6"/>',
+  arrowR:'<path d="M4 12h16M14 6l6 6-6 6"/>',
+  kbd:'<rect x="2" y="5" width="20" height="12" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M9 13h6M9 21l3-2 3 2"/>',
+  bksp:'<path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1zM12 9l6 6M18 9l-6 6"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  log:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
 };
 const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
 
@@ -63,8 +70,8 @@ const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none
    Lister (træninger, mad …) har id + u (sidst ændret), så ændringer fra flere enheder kan flettes. */
 const KEY = 'lift_v3';
 const COLLS = ['workouts','routines','customEx','food','customFoods','body','goals'];
-const SYNC_PROFILE = ['onboarded','offerSeen','goal','sex','age','height','weight','activity','kcalGoal','proteinGoal','weeklyGoal','restDefault','sound','unit'];
-const blankProfile = () => ({onboarded:false, offerSeen:false, goal:'muscle', sex:null, age:null, height:null, weight:null, activity:1.55,
+const SYNC_PROFILE = ['lang','favs','onboarded','offerSeen','goal','sex','age','height','weight','activity','kcalGoal','proteinGoal','weeklyGoal','restDefault','sound','unit'];
+const blankProfile = () => ({lang:null, favs:[], onboarded:false, offerSeen:false, goal:'muscle', sex:null, age:null, height:null, weight:null, activity:1.55,
   kcalGoal:null, proteinGoal:null, weeklyGoal:3, restDefault:90, sound:true, pu:0,
   premium:null, lastBackup:null, interest:null, waitlist:null, flags:{}});
 const blank = () => ({profile:blankProfile(), workouts:[], routines:[], customEx:[], food:[], customFoods:[], body:[], goals:[], del:{}, dirty:{}, sync:{uid:null, pulled:0, profPushed:0}, current:null, summary:null});
@@ -74,6 +81,7 @@ function load(){
   try{
     const raw = localStorage.getItem(KEY);
     if(raw){ const d = JSON.parse(raw); S = Object.assign(blank(), d); S.profile = Object.assign(blankProfile(), d.profile||{}); COLLS.forEach(k => { if(!Array.isArray(S[k])) S[k] = [] });
+      if(!Array.isArray(S.profile.favs)) S.profile.favs = [];
       if(!S.dirty || typeof S.dirty !== 'object') S.dirty = {}; if(!S.sync || typeof S.sync !== 'object') S.sync = {uid:null, pulled:0, profPushed:0}; if(!S.del) S.del = {}; return }
     const old = localStorage.getItem('lift_v2') || localStorage.getItem('lift_v1');
     if(old) migrateV2(JSON.parse(old));
@@ -89,7 +97,7 @@ function migrateV2(d){
     return {id:l.id, start:end - (l.min||30)*60000, end, name:'Workout', u:now, ex:l.ex.filter(e=>EX[e.id]).map(e => ({id:e.id, sets:e.sets.map(s => ({kg:s.w||0, reps:s.r||0, done:true}))}))} });
   save();
 }
-function lsSave(){ try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){ toast('Could not save – is your storage full?') } }
+function lsSave(){ try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){ toast(t('Could not save – is your storage full?')) } }
 function save(){ lsSave(); scheduleSync() }
 const touch = o => (o.u = Date.now(), o);
 function upsert(coll, item){ touch(item); const i = S[coll].findIndex(x => x.id === item.id); if(i >= 0) S[coll][i] = item; else S[coll].push(item); S.dirty[item.id] = coll; save() }
@@ -99,13 +107,17 @@ function setProfile(k, v){ S.profile[k] = v; S.profile.pu = Date.now(); save() }
 /* ============================== HJÆLPERE ============================== */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt = (n, d=1) => { if(n == null || isNaN(n)) return '–'; const f = Math.pow(10,d); return String(Math.round(n*f)/f) };
+const fmt = (n, d=1) => { if(n == null || isNaN(n)) return '–'; const f = Math.pow(10,d); return String(Math.round(n*f)/f).replace('.', decSep()) };
+const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? null : n };
 const DAY = 864e5;
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
 const dayKey = (d = new Date()) => { const x = new Date(d); return x.getFullYear() + '-' + String(x.getMonth()+1).padStart(2,'0') + '-' + String(x.getDate()).padStart(2,'0') };
-const dk = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-const dkLong = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-const weekday = d => new Date(d).toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short'});
+const dk = d => new Date(d).toLocaleDateString(LOC(),{day:'numeric',month:'short'});
+const dkLong = d => new Date(d).toLocaleDateString(LOC(),{day:'numeric',month:'long',year:'numeric'});
+const weekday = d => new Date(d).toLocaleDateString(LOC(),{weekday:'short', day:'numeric', month:'short'});
+const timeTxt = d => new Date(d).toLocaleTimeString(LOC(),{hour:'2-digit', minute:'2-digit'});
+const fmtDT = d => weekday(d) + ', ' + timeTxt(d);
+function setLang(l){ LANG = l; document.documentElement.lang = l; setProfile('lang', l); render() }
 const weekStart = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x.getTime() };
 const isPremium = () => { const p = S.profile.premium; if(!p) return false; if(p.until && new Date(p.until).getTime() + 3*DAY < Date.now()) return false; return true };
 const testTools = () => { try{ if(/[?&]test\b/.test(location.search)) localStorage.setItem('lift_test','1'); return CONFIG.showTestTools || localStorage.getItem('lift_test')==='1' }catch(e){ return CONFIG.showTestTools } };
@@ -113,11 +125,11 @@ function toast(m){ document.querySelectorAll('.toast').forEach(t=>t.remove()); c
 function modal(html){ $('#modal').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; const f = $('#modal .sheet input:not([type=hidden]), #modal .sheet button'); f && f.focus({preventScroll:true}) }
 function closeModal(){ if(typeof stopScanner === 'function') stopScanner(); $('#modal').innerHTML = '' }
 addEventListener('keydown', e => { if(e.key==='Escape') closeModal() });
-const closeBtn = () => `<button class="iconbtn" onclick="closeModal()" aria-label="Close">${ic('x')}</button>`;
+const closeBtn = () => `<button class="iconbtn" onclick="closeModal()" aria-label="${t('Close')}">${ic('x')}</button>`;
 const lockPill = () => `<span class="pill lock">${ic('lock')} Premium</span>`;
-const legalLinks = () => `<a href="terms.html" class="neon">Terms</a> · <a href="privacy.html" class="neon">Privacy</a>`;
+const legalLinks = () => `<a href="terms.html" class="neon">${t('Terms')}</a> · <a href="privacy.html" class="neon">${t('Privacy')}</a>`;
 function lockedCard(title, text, from){
-  return `<div class="card locked-card"><div class="row between"><h3 style="margin:0">${title}</h3>${lockPill()}</div><p class="small mut">${text}</p><button class="btn sm pri" onclick="openPremium('${from}')">${ic('crown','sm')} Unlock with Premium</button></div>`;
+  return `<div class="card locked-card"><div class="row between"><h3 style="margin:0">${title}</h3>${lockPill()}</div><p class="small mut">${text}</p><button class="btn sm pri" onclick="openPremium('${from}')">${ic('crown','sm')} ${t('Unlock with Premium')}</button></div>`;
 }
 
 /* ============================== MÅLING (GoatCounter) ============================== */
@@ -138,9 +150,9 @@ function trackOnce(name){ if(S.profile.flags[name]) return; S.profile.flags[name
 
 /* ============================== ØVELSER ============================== */
 // Indbyggede øvelser (data.js) + brugerens egne
-function exInfo(id){ return EX[id] || S.customEx.find(x => x.id === id) || {n:'Unknown exercise', m:'Full body', t:'w'} }
+function exInfo(id){ return EX[id] || S.customEx.find(x => x.id === id) || {n:t('Unknown exercise'), m:'Full body', t:'w'} }
 const allExercises = () => [...Object.entries(EX).map(([id,x]) => ({id, ...x})), ...S.customEx.map(x => ({...x, custom:true}))];
-const unitOf = x => x.t==='s' ? 'sec' : 'reps';
+const unitOf = x => x.t==='s' ? t('sec') : t('reps');
 
 /* ============================== DEMO-ANIMATIONER ==============================
    Hver stilling (pose) har to positioner: A (start) og B (bunden af bevægelsen).
@@ -204,7 +216,7 @@ function demoSVG(id){
   const arrow = anim==='plank' ? '' : `<g opacity=".0" stroke="${N}" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
       ${vert ? `<path d="M116 30v40M110 36l6-6 6 6M110 64l6 6 6-6"/>` : `<path d="M30 -2h50M36 -8l-6 6 6 6M74 -8l6 6-6 6"/>`}
       <animate attributeName="opacity" values="0;.85;0" dur="${dur}" repeatCount="indefinite"/></g>`;
-  return `<svg viewBox="-8 -12 136 134" role="img" aria-label="Animation of ${esc(x.n)}">
+  return `<svg viewBox="-8 -12 136 134" role="img" aria-label="${t('Animation of {n}', {n:esc(x.n)})}">
     <ellipse cx="60" cy="112" rx="56" ry="4" fill="#000" opacity=".45"/>
     <line x1="-8" y1="111" x2="128" y2="111" stroke="#2a342f" stroke-width="2"/>
     ${scene}${arrow}
@@ -214,7 +226,7 @@ function demoSVG(id){
     <circle r="8.5" fill="#0e1310" stroke="${N}" stroke-width="4" cx="${A.h[0]}" cy="${A.h[1]}">${an('cx',A.h[0],B.h[0])}${an('cy',A.h[1],B.h[1])}</circle>
     ${handProp}</svg>`;
 }
-const tempoText = id => exInfo(id).t==='s' ? 'Hold still and breathe calmly.' : exInfo(id).a==='swing' ? 'Explode up with your hips, let the bell fall back.' : 'Lower slowly (2 sec) · push up strong (1 sec).';
+const tempoText = id => exInfo(id).t==='s' ? t('Hold still and breathe calmly.') : exInfo(id).a==='swing' ? t('Explode up with your hips, let the bell fall back.') : t('Lower slowly (2 sec) · push up strong (1 sec).');
 
 /* ============================== KONTO, SYNKRONISERING & BETALING (Firebase + Stripe) ==============================
    Login:   Firebase Authentication med e-mail-link (ingen adgangskode). Firebase sender selv mailen.
@@ -263,44 +275,44 @@ async function initAccount(){
 async function sendCode(e){       // (navnet bruges af skærmene)
   e && e.preventDefault();
   const m = ($('#acEmail')?.value || '').trim();
-  if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
-  if(!fb) return toast('Connecting… try again in a moment');
+  if(!/^\S+@\S+\.\S+$/.test(m)) return toast(t('Please enter a valid email'));
+  if(!fb) return toast(t('Connecting… try again in a moment'));
   acct.busy = true; render();
   try{
     await fb.A.sendSignInLinkToEmail(fb.auth, m, {url: appBase() + '?app&signin=1', handleCodeInApp: true});
     try{ localStorage.setItem('lift_signin_email', m) }catch(_){}
     acct.email = m; acct.step = 'sent'; track('signin-link-sent');
-  }catch(err){ console.warn(err); toast(err && err.code === 'auth/quota-exceeded' ? 'Too many sign-ins today. Try again later.' : 'Could not send the email. Check your address.') }
+  }catch(err){ console.warn(err); toast(err && err.code === 'auth/quota-exceeded' ? t('Too many sign-ins today. Try again later.') : t('Could not send the email. Check your address.')) }
   acct.busy = false; render();
 }
 async function completeLink(email){
   try{
     await fb.A.signInWithEmailLink(fb.auth, email, location.href);
     try{ localStorage.removeItem('lift_signin_email') }catch(_){}
-    acct.step = 'email'; track('signed-in'); toast('Welcome to LIFT!');
+    acct.step = 'email'; track('signed-in'); toast(t('Welcome to LIFT!'));
   }catch(err){
     console.warn(err); acct.step = 'email';
-    toast(err && /expired|invalid-action/.test(err.code || '') ? 'That link has expired. Send a new one.' : 'Could not sign you in. Try again.');
+    toast(err && /expired|invalid-action/.test(err.code || '') ? t('That link has expired. Send a new one.') : t('Could not sign you in. Try again.'));
   }
   window.history.replaceState(null, '', location.pathname + '?app');
 }
 async function confirmEmail(e){     // linket blev åbnet på en anden enhed/browser
   e && e.preventDefault();
-  const m = ($('#acEmail')?.value || '').trim(); if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
+  const m = ($('#acEmail')?.value || '').trim(); if(!/^\S+@\S+\.\S+$/.test(m)) return toast(t('Please enter a valid email'));
   acct.busy = true; render(); await completeLink(m); acct.busy = false; render();
 }
 async function signOut(){
   if(fb) await fb.A.signOut(fb.auth);
-  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('home'); toast('Signed out');
+  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('home'); toast(t('Signed out'));
 }
 function loginHTML(intro){
   if(!authEnabled()) return '';
-  if(!acct.ready) return `<p class="small mut">Connecting…</p>`;
-  if(acct.step === 'sent') return `<p class="small">We sent a sign-in link to <b>${esc(acct.email)}</b>.</p><p class="small mut">Open the email on this phone and tap the link. Check spam if you can't find it.</p>
-    <button type="button" class="link" onclick="acct.step='email';render()">Use another email or resend</button>`;
-  return `<form onsubmit="${acct.step === 'confirm' ? 'confirmEmail' : 'sendCode'}(event)"><p class="small mut">${acct.step === 'confirm' ? 'Confirm your email to finish signing in.' : (intro || 'Sign in with your email. No password – we email you a sign-in link.')}</p>
-    <div class="row"><input id="acEmail" class="txt grow" type="email" autocomplete="email" required placeholder="you@email.com" aria-label="Your email" value="${esc(acct.email)}">
-    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':acct.step === 'confirm' ? 'Sign in' : 'Send'}</button></div></form>`;
+  if(!acct.ready) return `<p class="small mut">${t('Connecting…')}</p>`;
+  if(acct.step === 'sent') return `<p class="small">${t('We sent a sign-in link to {e}.', {e:`<b>${esc(acct.email)}</b>`})}</p><p class="small mut">${t('Open the email on this phone and tap the link. Check spam if you can’t find it.')}</p>
+    <button type="button" class="link" onclick="acct.step='email';render()">${t('Use another email or resend')}</button>`;
+  return `<form onsubmit="${acct.step === 'confirm' ? 'confirmEmail' : 'sendCode'}(event)"><p class="small mut">${acct.step === 'confirm' ? t('Confirm your email to finish signing in.') : (intro || t('Sign in with your email. No password – we email you a sign-in link.'))}</p>
+    <div class="row"><input id="acEmail" class="txt grow" type="email" autocomplete="email" required placeholder="${t('you@email.com')}" aria-label="${t('Your email')}" value="${esc(acct.email)}">
+    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':acct.step === 'confirm' ? t('Sign in') : t('Send')}</button></div></form>`;
 }
 
 /* --- Synkronisering med Firestore --- */
@@ -382,7 +394,7 @@ async function syncNow(first){
 }
 function syncChip(){
   // Lille, diskret ikon: grøn sky = gemt på kontoen, grå = kun på telefonen, gul = ikke gemt endnu
-  const st = !acct.user ? ['cloudoff','Saved on this phone only','off'] : syncState==='syncing' ? ['cloud','Saving…','busy'] : syncState==='ok' ? ['cloud','Saved to your account','ok'] : syncState==='offline' ? ['cloudoff','Offline – saved on this phone','warn'] : ['cloudoff','Not saved yet','warn'];
+  const st = !acct.user ? ['cloudoff',t('Saved on this phone only'),'off'] : syncState==='syncing' ? ['cloud',t('Saving…'),'busy'] : syncState==='ok' ? ['cloud',t('Saved to your account'),'ok'] : syncState==='offline' ? ['cloudoff',t('Offline – saved on this phone'),'warn'] : ['cloudoff',t('Not saved yet'),'warn'];
   return `<button class="syncbtn ${st[2]}" id="syncChip" onclick="go('profile')" aria-label="${st[1]}" title="${st[1]}">${ic(st[0])}</button>`;
 }
 function updateSyncChip(){ const c = $('#syncChip'); if(c) c.outerHTML = syncChip() }
@@ -411,9 +423,9 @@ function applyEntitlement(){
 /* --- Betaling --- */
 let plan = 'year', premFrom = '';
 async function startCheckout(){
-  if(!acct.user || !fb) return toast('Please sign in first');
+  if(!acct.user || !fb) return toast(t('Please sign in first'));
   acct.busy = true; render(); track('checkout-start-' + plan);
-  const fail = msg => { acct.busy = false; render(); toast(msg || 'Something went wrong. Please try again.') };
+  const fail = msg => { acct.busy = false; render(); toast(msg || t('Something went wrong. Please try again.')) };
   try{
     const {F, db} = fb, uid = acct.user.uid;
     let hadSub = false;   // kun én gratis prøveperiode pr. person
@@ -426,27 +438,27 @@ async function startCheckout(){
     const unsub = F.onSnapshot(ref, s => { const d = s.data() || {};
       if(d.error && !done){ done = true; unsub(); fail(d.error.message) }
       if(d.url && !done){ done = true; unsub(); location.assign(d.url) } });
-    setTimeout(() => { if(!done){ done = true; unsub(); fail('Payment is not ready yet. Please try again in a moment.') } }, 30000);
+    setTimeout(() => { if(!done){ done = true; unsub(); fail(t('Payment is not ready yet. Please try again in a moment.')) } }, 30000);
   }catch(e){ console.warn(e); fail() }
 }
 async function openPortal(){
-  if(!fb || !acct.user) return toast('Please sign in first');
+  if(!fb || !acct.user) return toast(t('Please sign in first'));
   acct.busy = true; render();
   try{
     const Fn = await import(FB_SDK + 'firebase-functions.js');
     const call = Fn.httpsCallable(Fn.getFunctions(fb.app, CONFIG.firebaseFunctionsRegion || 'europe-west1'), 'ext-firestore-stripe-payments-createPortalLink');
     const {data} = await call({returnUrl: appBase() + '?app', locale:'auto'});
     location.assign(data.url);
-  }catch(e){ console.warn(e); acct.busy = false; render(); toast('Could not open subscription settings. Please try again.') }
+  }catch(e){ console.warn(e); acct.busy = false; render(); toast(t('Could not open subscription settings. Please try again.')) }
 }
 async function handleCheckoutReturn(){
   const q = new URLSearchParams(location.search), r = q.get('checkout');
   if(!r) return;
   window.history.replaceState(null, '', location.pathname + '?app');
-  if(r === 'cancel'){ toast('Payment cancelled – nothing was charged'); return }
-  track('checkout-success'); toast('Thanks! Activating Premium…');
+  if(r === 'cancel'){ toast(t('Payment cancelled – nothing was charged')); return }
+  track('checkout-success'); toast(t('Thanks! Activating Premium…'));
   for(let i = 0; i < 10 && !(S.profile.premium && S.profile.premium.source === 'stripe'); i++){ await new Promise(r => setTimeout(r, 2500)); if(acct.user) await refreshSub() }
-  if(isPremium()){ toast('Premium is active – enjoy!'); go('premium') } else toast('Payment received. Premium will appear in a moment – try reopening the app.');
+  if(isPremium()){ toast(t('Premium is active – enjoy!')); go('premium') } else toast(t('Payment received. Premium will appear in a moment – try reopening the app.'));
 }
 
 /* ============================== NAVIGATION ============================== */
@@ -454,16 +466,17 @@ let view = 'home';
 const TABS = [['home','Home','home'],['train','Train','dumbbell'],['food','Food','apple'],['goals','Goals','target'],['profile','Profile','user']];
 const SCREENS = {};   // udfyldes af train.js, food.js, stats.js, profile.js
 let prevView = 'home';
-function go(v){ if(v !== 'home') $('#installBox')?.remove(); if(v !== view && !['premium','done','routine','workout'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
+function go(v){ if(v !== 'home') $('#installBox')?.remove(); if(v !== view && !['premium','done','routine','workout','routines'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
 function render(){
   const gate = appGate();
-  const full = gate || ['workout','done','premium','routine'].includes(view);
+  const full = gate || ['workout','done','premium','routine','routines'].includes(view);
   $('#tabs').style.display = full ? 'none' : '';
-  $('#tabs .in').innerHTML = TABS.map(([k,l,i]) => `<button class="${view===k?'on':''}" onclick="go('${k}')" aria-label="${l}" ${view===k?'aria-current="page"':''}>${ic(i)}${l}</button>`).join('');
+  $('#tabs').setAttribute('aria-label', t('Main menu'));
+  $('#tabs .in').innerHTML = TABS.map(([k,l,i]) => `<button class="${view===k?'on':''}" onclick="go('${k}')" aria-label="${t(l)}" ${view===k?'aria-current="page"':''}>${ic(i)}${t(l)}</button>`).join('');
   const app = $('#app');
   if(gate) return SCREENS[gate](app);
   (SCREENS[view] || SCREENS.home)(app);
-  renderRestBar();
+  renderRestBar(); renderMiniBar(full);
 }
 // Hvad skal vises før selve appen? 1) splash mens vi tjekker login 2) opret konto/log ind 3) Premium-tilbud
 function appGate(){
@@ -474,6 +487,13 @@ function appGate(){
   }
   if(!S.profile.offerSeen && !isPremium()) return 'offer';
   return null;
+}
+// Træning i gang, men minimeret: lille bjælke over menuen
+function renderMiniBar(full){
+  let m = $('#minibar'); if(!m){ m = document.createElement('div'); m.id = 'minibar'; document.body.appendChild(m) }
+  document.body.classList.toggle('has-mini', !!(S.current && !full));
+  if(!S.current || full){ m.innerHTML = ''; return }
+  m.innerHTML = `<button class="minibar" onclick="go('workout')"><span class="live"></span><b class="grow ell">${esc(S.current.name)}</b><span class="xs mut" id="mbT">${durText(Date.now()-S.current.start)}</span>${ic('chevR','sm')}</button>`;
 }
 const header = (title, right='') => `<header class="hdr">${title}${right}</header>`;
 const BARBELL = '<svg class="lb" viewBox="60 140 392 148" aria-hidden="true"><g fill="#39ff7a"><rect x="70" y="203" width="372" height="22" rx="11"/><rect x="112" y="150" width="40" height="128" rx="12"/><rect x="162" y="172" width="30" height="84" rx="10"/><rect x="360" y="150" width="40" height="128" rx="12"/><rect x="320" y="172" width="30" height="84" rx="10"/><rect x="76" y="186" width="26" height="56" rx="8"/><rect x="410" y="186" width="26" height="56" rx="8"/></g></svg>';
@@ -500,12 +520,12 @@ function adjRest(d){ if(!rest || rest.fin) return; rest.end = Math.max(Date.now(
 function renderRestBar(){
   const b = $('#restbar');
   if(!rest){ b.innerHTML = ''; return }
-  if(rest.fin){ b.innerHTML = `<div class="restbar"><div class="in fin row" onclick="stopRest()" role="alert"><span class="t">Go!</span><b class="grow">Time for your next set</b>${ic('check')}</div></div>`; return }
+  if(rest.fin){ b.innerHTML = `<div class="restbar"><div class="in fin row" onclick="stopRest()" role="alert"><span class="t">${t('Go!')}</span><b class="grow">${t('Time for your next set')}</b>${ic('check')}</div></div>`; return }
   const bottom = view==='workout' ? '' : 'style="bottom:calc(74px + var(--bot))"';
   b.innerHTML = `<div class="restbar" ${bottom}><div class="in row" role="timer" aria-live="off">
-    <div class="grow"><div class="xs mut">${ic('timer','sm')} Rest</div><span class="t" id="restT">${mmss(restLeft())}</span></div>
-    <button class="btn sm" onclick="adjRest(15)" aria-label="15 seconds more">+15</button>
-    <button class="btn sm pri" onclick="stopRest()">${ic('skip','sm')} Skip</button>
+    <div class="grow"><div class="xs mut">${ic('timer','sm')} ${t('Rest')}</div><span class="t" id="restT">${mmss(restLeft())}</span></div>
+    <button class="btn sm" onclick="adjRest(15)" aria-label="${t('15 seconds more')}">+15</button>
+    <button class="btn sm pri" onclick="stopRest()">${ic('skip','sm')} ${t('Skip')}</button>
     <div class="bar" id="restB" style="width:${restLeft()/rest.total*100}%"></div></div></div>`;
 }
 
@@ -524,13 +544,17 @@ function drawLine(cv, pts){
   c.beginPath(); pts.forEach((p,i)=> i ? c.lineTo(X(i),Y(p.y)) : c.moveTo(X(i),Y(p.y))); c.strokeStyle = '#39ff7a'; c.lineWidth = 3; c.lineJoin='round'; c.stroke();
   pts.forEach((p,i)=>{ c.beginPath(); c.arc(X(i),Y(p.y),4,0,7); c.fillStyle='#0b0d0c'; c.fill(); c.strokeStyle='#39ff7a'; c.lineWidth=2; c.stroke() });
 }
-function drawBars(cv, pts){
+// lab = hvordan tallet over søjlen skrives. Er der ikke plads til alle tal, vises kun det højeste og det sidste.
+function drawBars(cv, pts, lab = v => String(v)){
   if(!cv) return; const [c,w,h] = setupCanvas(cv);
   const pad = {l:4,r:4,t:16,b:20}, mx = Math.max(1,...pts.map(p=>p.y)), bw = (w-pad.l-pad.r)/pts.length;
   c.font = '600 11px Inter, sans-serif'; c.textAlign = 'center';
+  const labs = pts.map(p => p.y ? lab(p.y) : ''), tight = labs.some(s => c.measureText(s).width > bw - 2);
+  const top = pts.reduce((m,p,i) => p.y > pts[m].y ? i : m, 0);
   pts.forEach((p,i)=>{ const bh = (p.y/mx)*(h-pad.t-pad.b), x = pad.l + i*bw + bw*.15, y = h-pad.b-bh;
     c.fillStyle = i===pts.length-1 ? '#39ff7a' : '#1f6b3b'; c.fillRect(x,y,bw*.7,Math.max(bh,2));
-    c.fillStyle = '#a9b6af'; c.fillText(p.x, x+bw*.35, h-5); if(p.y) c.fillText(p.y>=1000 ? (p.y/1000).toFixed(1)+'t' : p.y, x+bw*.35, y-4) });
+    c.fillStyle = '#a9b6af'; c.fillText(p.x, x+bw*.35, h-5);
+    if(labs[i] && (!tight || i === top || i === pts.length-1)) c.fillText(labs[i], x+bw*.35, y-4) });
 }
 
 /* ============================== HJEMMESKÆRM (PWA) ============================== */
@@ -538,7 +562,7 @@ let deferredPrompt = null;
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e });
-addEventListener('appinstalled', () => { $('#installBox')?.remove(); toast('LIFT was added to your home screen'); track('installed') });
+addEventListener('appinstalled', () => { $('#installBox')?.remove(); toast(t('LIFT was added to your home screen')); track('installed') });
 function showInstall(force){
   if(isStandalone() || window.top !== window.self) return;
   if(!force && (view !== 'home' || S.current || $('#modal .sheet'))) return;   // aldrig midt i en træning
@@ -546,11 +570,11 @@ function showInstall(force){
   if(!force && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) return;
   $('#installBox')?.remove();
   const d = document.createElement('div'); d.id = 'installBox'; d.className = 'install'; d.setAttribute('role','dialog');
-  d.innerHTML = `<div class="banner"><span class="bi">${ic('install')}</span><div class="grow"><b>Add LIFT to your home screen</b>
-    ${deferredPrompt ? `<p class="small mut">Then it opens like a real app.</p><button class="btn sm pri block" onclick="doInstall()">Install app</button>`
-      : isIOS() ? `<p class="small">1. Tap Share ${ic('share','sm')} in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Tap <b>Add</b></p>`
-      : `<p class="small">Open the browser menu (⋮) and choose <b>Add to Home screen</b>.</p>`}</div>
-    <button class="iconbtn" onclick="dismissInstall()" aria-label="Close">${ic('x')}</button></div>`;
+  d.innerHTML = `<div class="banner"><span class="bi">${ic('install')}</span><div class="grow"><b>${t('Add LIFT to your home screen')}</b>
+    ${deferredPrompt ? `<p class="small mut">${t('Then it opens like a real app.')}</p><button class="btn sm pri block" onclick="doInstall()">${t('Install app')}</button>`
+      : isIOS() ? `<p class="small">${t('1. Tap Share {i} in Safari', {i:ic('share','sm')})}<br>${t('2. Choose <b>Add to Home Screen</b>')}<br>${t('3. Tap <b>Add</b>')}</p>`
+      : `<p class="small">${t('Open the browser menu (⋮) and choose <b>Add to Home screen</b>.')}</p>`}</div>
+    <button class="iconbtn" onclick="dismissInstall()" aria-label="${t('Close')}">${ic('x')}</button></div>`;
   document.body.appendChild(d);
 }
 function dismissInstall(){ try{ localStorage.setItem('lift_noinstall','1') }catch(e){} $('#installBox')?.remove() }
@@ -561,6 +585,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(()=>{ if(['goals','home','train'].includes(view) && !$('#modal .sheet')) render() }, 200) });
 function start(){
   load();
+  LANG = S.profile.lang || detectLang(); document.documentElement.lang = LANG;
   if(S.summary) view = 'done'; else if(S.current) view = 'workout';
   render();
   initAccount();
