@@ -1,12 +1,12 @@
 # LIFT – strength training for beginners
 
-Mobile-first web app (PWA) for everyone who trains: workout log that remembers what you lifted last time, routines, calorie tracking with barcode scanning, stats and an optional account that saves your data across devices (Supabase). Premium via Stripe.
+Mobile-first web app (PWA) for everyone who trains: workout log that remembers what you lifted last time, routines, calorie tracking with barcode scanning, stats and an optional account that saves your data across devices (Firebase Authentication + Firestore). Premium via Stripe (Firebase-udvidelsen "Run Payments with Stripe").
 
 ## Filer
 | Fil | Hvad |
 |---|---|
 | `data.js` | **Øvelser, programmer, opvarmning, priser og indstillinger.** Her tilføjer du nye programmer/øvelser (se forklaringen øverst i filen). |
-| `core.js` | Data, synkronisering med kontoen, login, betaling, fælles hjælpere. |
+| `core.js` | Data, synkronisering med Firestore, login (Firebase), betaling, fælles hjælpere. |
 | `train.js` | Træningslog (repcount), rutiner, skabeloner, historik, kropsvægt. |
 | `food.js` | Kalorier, søgning, stregkode-scanning, makro- og mikronæringsstoffer. |
 | `home.js` | Home: overblik over i dag, ugen og mål. |
@@ -19,8 +19,8 @@ Mobile-first web app (PWA) for everyone who trains: workout log that remembers w
 | `sw.js` | Offline-cache. Hæv `CACHE`-versionen og `?v=`-tallet i `index.html`, når du ændrer filer. |
 
 ## Opsætning
-Se **SETUP.md** for måling (GoatCounter), venteliste (Tally) og login + betaling (Supabase + Stripe).
-Serverkoden ligger i `supabase/` (hver funktion er én fil, der kan kopieres ind i Supabases webeditor).
+Se **SETUP.md** for måling (GoatCounter), venteliste (Tally) og login + database + betaling (Firebase + Stripe).
+Sikkerhedsreglerne til Firestore ligger i `firebase/firestore.rules`.
 
 ## Måling (valgfri)
 Opret en gratis konto på goatcounter.com og skriv din kode i `CONFIG.goatcounterCode` i `data.js`.

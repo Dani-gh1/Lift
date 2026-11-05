@@ -5,33 +5,30 @@
 SCREENS.splash = app => { app.innerHTML = `<div class="splash">${logoHTML(true)}</div>` };
 
 SCREENS.auth = app => {
-  const code = acct.step === 'code';
+  const sent = acct.step === 'sent', confirm = acct.step === 'confirm';
   app.innerHTML = `<div class="wrap auth">
     <div class="authtop">${logoHTML(true)}</div>
-    ${code ? `
+    ${sent ? `
       <div class="bigicon">${ic('mail')}</div>
       <h1>Check your inbox</h1>
-      <p class="mut">We sent a sign-in link to <b class="txtc">${esc(acct.email)}</b>. Tap it on this phone – or type the code from the email:</p>
-      <form onsubmit="verifyCode(event)">
-        <input id="acCode" class="txt code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="••••••" aria-label="Code from email">
-        <button class="btn pri block" ${acct.busy?'disabled':''}>${acct.busy?'Checking…':'Continue'}</button>
-      </form>
-      <button class="link block" onclick="acct.step='email';render()">Use another email</button>
-      <p class="xs mut center">No email? Check your spam folder, or wait a minute and try again.</p>`
+      <p class="mut">We sent a sign-in link to <b class="txtc">${esc(acct.email)}</b>.</p>
+      <p class="mut">Open the email <b class="txtc">on this phone</b> and tap the link – then you're in.</p>
+      <button class="btn block" style="margin-top:14px" onclick="acct.step='email';render()">Use another email or send again</button>
+      <p class="xs mut center">No email after a minute? Check your spam folder.</p>`
     : `
-      <h1>Create your account</h1>
-      <p class="mut">Log every rep, see what you lifted last time and track what you eat. Your data is saved to your account – on every device.</p>
-      <form onsubmit="sendCode(event)">
+      <h1>${confirm ? 'Almost there' : 'Create your account'}</h1>
+      <p class="mut">${confirm ? 'Confirm your email to finish signing in.' : 'Log every rep, see what you lifted last time and track what you eat. Your data is saved to your account – on every device.'}</p>
+      <form onsubmit="${confirm ? 'confirmEmail' : 'sendCode'}(event)">
         <label class="small mut" for="acEmail">Email</label>
         <input id="acEmail" class="txt" type="email" autocomplete="email" required placeholder="you@email.com" value="${esc(acct.email)}" style="margin:6px 0 12px">
-        <button class="btn pri block" ${acct.busy?'disabled':''}>${acct.busy?'Sending…':'Continue'}</button>
+        <button class="btn pri block" ${acct.busy?'disabled':''}>${acct.busy ? (confirm ? 'Signing in…' : 'Sending…') : (confirm ? 'Sign in' : 'Continue')}</button>
       </form>
-      <p class="xs mut center">No password needed – we email you a sign-in link.<br>Already have an account? Same thing – just enter your email.</p>
-      ${testTools() || !CONFIG.requireAccount ? `<button class="link block" onclick="acct.skip=true;try{localStorage.setItem('lift_skip','1')}catch(_){};render()">Continue without account</button>` : ''}`}
+      ${confirm ? '' : `<p class="xs mut center">No password needed – we email you a sign-in link.<br>Already have an account? Same thing – just enter your email.</p>
+      ${testTools() || !CONFIG.requireAccount ? `<button class="link block" onclick="acct.skip=true;try{localStorage.setItem('lift_skip','1')}catch(_){};render()">Continue without account</button>` : ''}`}`}
     <div style="flex:1"></div>
     <p class="xs mut center">By continuing you accept our ${legalLinks()}.</p>
   </div>`;
-  setTimeout(() => (code ? $('#acCode') : $('#acEmail'))?.focus(), 60);
+  if(!sent) setTimeout(() => $('#acEmail')?.focus(), 60);
 };
 
 const PERKS = [
@@ -116,10 +113,13 @@ function askReset(){
     <div class="grid2"><button class="btn" onclick="closeModal()">Keep</button><button class="btn danger" onclick="doReset()">Delete</button></div>`);
 }
 async function doReset(){
-  const now = Date.now(); COLLS.forEach(k => S[k].forEach(x => S.del[x.id] = now));
-  const keepDel = S.del, prem = S.profile.premium; S = blank(); S.del = keepDel; S.profile.premium = prem; S.profile.pu = now;
+  const now = Date.now(), del = Object.assign({}, S.del), dirty = {};
+  COLLS.forEach(k => S[k].forEach(x => { del[x.id] = now; dirty[x.id] = k }));
+  const keep = {premium:S.profile.premium}, sync = S.sync;
+  S = blank(); S.del = del; S.dirty = dirty; S.sync = sync; Object.assign(S.profile, keep); S.profile.pu = now; S.profile.offerSeen = true; S.profile.onboarded = true;
   save(); stopRest(); closeModal(); toast('Data deleted'); go('home');
 }
+
 
 /* ---------- Backup & eksport ---------- */
 async function saveFile(name, text, mime){
@@ -171,7 +171,7 @@ function loadDemo(){
     upsert('goals', {id:newId(), type:'lift', exId:'bench', reps:1, start:50, target:80, created:now - 50*DAY, deadline:now + 60*DAY, done:null});
     upsert('goals', {id:newId(), type:'lift', exId:'pullup', reps:1, start:3, target:12, created:now - 50*DAY, deadline:null, done:null});
   }
-  S.workouts.sort((a,b) => a.start - b.start); save(); toast('Sample data loaded'); go('home');
+  S.workouts.sort((a,b) => a.start - b.start); markAllDirty(); save(); toast('Sample data loaded'); go('home');
 }
 
 /* ---------- Premium ---------- */

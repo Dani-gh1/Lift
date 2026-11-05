@@ -12,12 +12,12 @@
 <body><main>
 <a class="back" href="./?app">← Back to LIFT</a>
 <h1>Privacy Policy</h1>
-<p class="mut">Last updated: 2 November 2026</p>
+<p class="mut">Last updated: 5 November 2026</p>
 
 <div class="box">
 <b>The short version</b>
 <ul>
-<li>Your workouts stay on your phone. We can't see them.</li>
+<li>Without an account, your data stays on your phone. With an account, it is stored securely in your account (EU) so you can use LIFT on all your devices.</li>
 <li>You don't need an account. We only store your email if you sign in to buy Premium or join the waitlist.</li>
 <li>We count app usage anonymously – no cookies, no ads, no tracking across sites.</li>
 <li>We never sell your data.</li>
@@ -31,9 +31,9 @@ Contact: <a href="mailto:danielsanchezhansen@gmail.com">danielsanchezhansen@gmai
 <h2>2. What we collect and why</h2>
 <table>
 <tr><th>Data</th><th>Why</th><th>Where it is stored</th></tr>
-<tr><td><b>Workouts, records, settings, your answers in the setup</b></td><td>To run the app</td><td>Only on your device (browser storage). It is not sent to us. Backup files you save are yours.</td></tr>
-<tr><td><b>Email address</b> (only if you sign in)</td><td>To sign you in and link your Premium subscription to you</td><td>Supabase, servers in the EU (Frankfurt)</td></tr>
-<tr><td><b>Subscription status</b> (plan, trial/active, renewal date)</td><td>To give you Premium</td><td>Supabase (EU)</td></tr>
+<tr><td><b>Workouts, routines, food log, body weight, goals and settings</b></td><td>To run the app and keep your data on all your devices</td><td>On your device. If you have an account: also in your account in Google Firebase Firestore (EU). Backup files you save are yours.</td></tr>
+<tr><td><b>Email address</b> (only if you sign in)</td><td>To sign you in and link your Premium subscription to you</td><td>Google Firebase Authentication</td></tr>
+<tr><td><b>Subscription status</b> (plan, trial/active, renewal date)</td><td>To give you Premium</td><td>Google Firebase Firestore (EU), updated automatically by Stripe</td></tr>
 <tr><td><b>Payment details</b> (name, card, billing country)</td><td>To take payment</td><td>Stripe. We never see your full card number.</td></tr>
 <tr><td><b>Email address</b> (if you join the waitlist)</td><td>To tell you when Premium opens</td><td>Tally (EU)</td></tr>
 <tr><td><b>Anonymous usage counts</b> (e.g. "a workout was completed", page visited, browser type, screen size, country)</td><td>To see what works and improve LIFT</td><td>GoatCounter (EU). No cookies, no IP addresses stored, no personal profile.</td></tr>
@@ -41,7 +41,8 @@ Contact: <a href="mailto:danielsanchezhansen@gmail.com">danielsanchezhansen@gmai
 
 <h2>3. Legal basis (GDPR)</h2>
 <ul>
-<li><b>Contract</b> (Art. 6(1)(b)): sign-in, Premium and payment.</li>
+<li><b>Contract</b> (Art. 6(1)(b)): sign-in, saving your data to your account, Premium and payment.</li>
+<li><b>Explicit consent</b> (Art. 9(2)(a)): storing health-related data (body weight, food log, workouts) in your account – see section 8.</li>
 <li><b>Consent</b> (Art. 6(1)(a)): the waitlist. You can withdraw it anytime.</li>
 <li><b>Legitimate interest</b> (Art. 6(1)(f)): anonymous usage statistics to improve the app.</li>
 <li><b>Legal obligation</b> (Art. 6(1)(c)): keeping payment records as required by Danish bookkeeping law.</li>
@@ -49,18 +50,19 @@ Contact: <a href="mailto:danielsanchezhansen@gmail.com">danielsanchezhansen@gmai
 
 <h2>4. Services we use</h2>
 <ul>
-<li><b>Supabase</b> – sign-in and subscription database (EU region).</li>
+<li><b>Google Firebase</b> (Google Ireland / Google LLC) – sign-in (Authentication), your account data (Firestore, EU region) and the connection to Stripe (Cloud Functions).</li>
 <li><b>Stripe</b> – payments. Stripe is responsible for its own processing of payment data; see <a href="https://stripe.com/privacy" rel="noopener">stripe.com/privacy</a>.</li>
 <li><b>GoatCounter</b> – privacy-friendly statistics.</li>
 <li><b>Tally</b> – waitlist form.</li>
 <li><b>GitHub Pages</b> – hosts the app. Like any website host, it receives your IP address when you load the app.</li>
-<li><b>Google Fonts</b> and <b>jsDelivr</b> – deliver fonts and a code library. They receive your IP address when they are loaded.</li>
+<li><b>Google Fonts</b>, <b>Google (gstatic)</b> and <b>jsDelivr</b> – deliver fonts and code libraries (Firebase, barcode scanner). They receive your IP address when they are loaded.</li>
 </ul>
 <p>Some of these companies are based in the USA. Transfers are covered by the EU–US Data Privacy Framework and/or the EU's standard contractual clauses.</p>
 
 <h2>5. How long we keep it</h2>
 <ul>
 <li>Data on your device: until you delete it (Profile → Delete all my data) or clear your browser.</li>
+<li>Data in your account: until you delete it. Profile → Delete all my data also deletes it from your account. Email us to delete your whole account.</li>
 <li>Sign-in and subscription data: as long as you have an account. Email us and we delete it.</li>
 <li>Payment records: 5 years, as required by Danish bookkeeping law.</li>
 <li>Waitlist emails: until Premium opens or you ask us to remove you.</li>
@@ -73,7 +75,7 @@ Contact: <a href="mailto:danielsanchezhansen@gmail.com">danielsanchezhansen@gmai
 <p>LIFT is made for people aged 15 and up. We don't knowingly collect personal data from children under 13. Buying Premium requires being 18 or having a parent's or guardian's permission.</p>
 
 <h2>8. Health data</h2>
-<p>Your workouts can say something about your health. That is one reason they stay on your device and are never sent to us.</p>
+<p>Your body weight, food log and workouts can say something about your health. Without an account they never leave your device. If you create an account, you agree that we store them in your account – only to show them to you on your devices, never for ads or to sell (explicit consent, GDPR Art. 9(2)(a)). You can withdraw by deleting your data in Profile.</p>
 
 <h2>9. Changes</h2>
 <p>If we change this policy, we update the date at the top. For important changes we tell signed-in users by email.</p>

@@ -30,13 +30,17 @@ const CONFIG = {
   waitlistUrl: 'https://tally.so/r/gbaZlJ',
   // Testknapper i Profil. Vises altid, når appen åbnes med ?app&test
   showTestTools: false,
-  // Login, konto-data og betaling (Supabase + Stripe). Begge værdier er offentlige.
-  supabaseUrl: 'https://akcqdkekmxfpudicacod.supabase.co',
-  supabaseAnonKey: 'sb_publishable_RskGvaF5kH3o-d-UEbFRaA__2AU-Di6',
+  // Login + database (Firebase). Indsæt værdierne fra Firebase → Project settings → Your apps → "SDK setup and configuration".
+  // De er offentlige og må gerne stå her. null = ingen konto (appen gemmer kun på telefonen).
+  firebase: null,   // fx {apiKey:'AIza…', authDomain:'lift-xxxx.firebaseapp.com', projectId:'lift-xxxx', appId:'1:…:web:…'}
+  // Region for udvidelsen "Run Payments with Stripe" (den du valgte ved installationen)
+  firebaseFunctionsRegion: 'europe-west1',
+  // Stripe Price ID'er (offentlige) – fra Stripe → Product catalog → LIFT Premium
+  stripePriceMonth: '',   // fx 'price_1Q…' (49 kr./md.)
+  stripePriceYear: '',    // fx 'price_1Q…' (349 kr./år)
   // false = BETALING vises kun i testtilstand (?app&test). Login og gem-på-konto virker for alle.
   paymentsLive: false,
   // true = man SKAL oprette konto før appen kan bruges. false = login-skærmen har også "Continue without account".
-  // Sæt kun til true, når du har din egen mail-afsender (SMTP) i Supabase – ellers får brugerne ikke login-mailen.
   requireAccount: false,
   // Varedata til stregkode-scanning og søgning (gratis, åben database)
   foodApi: 'https://world.openfoodfacts.org',

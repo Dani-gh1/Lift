@@ -67,13 +67,14 @@ const SYNC_PROFILE = ['onboarded','offerSeen','goal','sex','age','height','weigh
 const blankProfile = () => ({onboarded:false, offerSeen:false, goal:'muscle', sex:null, age:null, height:null, weight:null, activity:1.55,
   kcalGoal:null, proteinGoal:null, weeklyGoal:3, restDefault:90, sound:true, pu:0,
   premium:null, lastBackup:null, interest:null, waitlist:null, flags:{}});
-const blank = () => ({profile:blankProfile(), workouts:[], routines:[], customEx:[], food:[], customFoods:[], body:[], goals:[], del:{}, current:null, summary:null});
+const blank = () => ({profile:blankProfile(), workouts:[], routines:[], customEx:[], food:[], customFoods:[], body:[], goals:[], del:{}, dirty:{}, sync:{uid:null, pulled:0, profPushed:0}, current:null, summary:null});
 let S = blank();
 
 function load(){
   try{
     const raw = localStorage.getItem(KEY);
-    if(raw){ const d = JSON.parse(raw); S = Object.assign(blank(), d); S.profile = Object.assign(blankProfile(), d.profile||{}); COLLS.forEach(k => { if(!Array.isArray(S[k])) S[k] = [] }); return }
+    if(raw){ const d = JSON.parse(raw); S = Object.assign(blank(), d); S.profile = Object.assign(blankProfile(), d.profile||{}); COLLS.forEach(k => { if(!Array.isArray(S[k])) S[k] = [] });
+      if(!S.dirty || typeof S.dirty !== 'object') S.dirty = {}; if(!S.sync || typeof S.sync !== 'object') S.sync = {uid:null, pulled:0, profPushed:0}; if(!S.del) S.del = {}; return }
     const old = localStorage.getItem('lift_v2') || localStorage.getItem('lift_v1');
     if(old) migrateV2(JSON.parse(old));
   }catch(e){ console.warn(e); S = blank() }
@@ -91,8 +92,8 @@ function migrateV2(d){
 function lsSave(){ try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){ toast('Could not save – is your storage full?') } }
 function save(){ lsSave(); scheduleSync() }
 const touch = o => (o.u = Date.now(), o);
-function upsert(coll, item){ touch(item); const i = S[coll].findIndex(x => x.id === item.id); if(i >= 0) S[coll][i] = item; else S[coll].push(item); save() }
-function removeItem(coll, id){ S[coll] = S[coll].filter(x => x.id !== id); S.del[id] = Date.now(); save() }
+function upsert(coll, item){ touch(item); const i = S[coll].findIndex(x => x.id === item.id); if(i >= 0) S[coll][i] = item; else S[coll].push(item); S.dirty[item.id] = coll; save() }
+function removeItem(coll, id){ S[coll] = S[coll].filter(x => x.id !== id); S.del[id] = Date.now(); S.dirty[id] = coll; save() }
 function setProfile(k, v){ S.profile[k] = v; S.profile.pu = Date.now(); save() }
 
 /* ============================== HJÆLPERE ============================== */
@@ -215,65 +216,165 @@ function demoSVG(id){
 }
 const tempoText = id => exInfo(id).t==='s' ? 'Hold still and breathe calmly.' : exInfo(id).a==='swing' ? 'Explode up with your hips, let the bell fall back.' : 'Lower slowly (2 sec) · push up strong (1 sec).';
 
-/* ============================== KONTO, SYNKRONISERING & BETALING (Supabase + Stripe) ============================== */
-const authEnabled = () => !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
-const payEnabled = () => authEnabled() && (CONFIG.paymentsLive || testTools());
-let sb = null;
+/* ============================== KONTO, SYNKRONISERING & BETALING (Firebase + Stripe) ==============================
+   Login:   Firebase Authentication med e-mail-link (ingen adgangskode). Firebase sender selv mailen.
+   Data:    Firestore. Hver træning, måltid, rutine, mål osv. er sit eget dokument i users/{uid}/items/{id}.
+            Appen gemmer altid først på telefonen og synkroniserer kun det, der er ændret.
+   Betaling: Firebase-udvidelsen "Run Payments with Stripe" (customers/{uid}/checkout_sessions + subscriptions). */
+const FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+const authEnabled = () => !!(CONFIG.firebase && CONFIG.firebase.apiKey && CONFIG.firebase.projectId);
+const payEnabled = () => authEnabled() && !!(CONFIG.stripePriceMonth && CONFIG.stripePriceYear) && (CONFIG.paymentsLive || testTools());
+let fb = null;      // {app, auth, db, A: auth-modul, F: firestore-modul}
 const acct = {ready:false, user:null, sub:null, step:'email', email:'', busy:false, offline:false, skip:false};
 const rememberUser = id => { try{ id ? localStorage.setItem('lift_uid', id) : localStorage.removeItem('lift_uid') }catch(_){} };
 const rememberedUser = () => { try{ return localStorage.getItem('lift_uid') }catch(_){ return null } };
 let syncState = 'local', syncTimer = null, syncing = false, syncAgain = false;
+const appBase = () => location.origin + location.pathname;
+const toUser = u => u ? {uid:u.uid, email:u.email || ''} : null;
 
 async function initAccount(){
   if(!authEnabled()) return;
   try{
-    const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-    sb = mod.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'implicit'}});
-    const {data} = await sb.auth.getSession();
-    acct.user = data.session?.user || null; acct.ready = true; rememberUser(acct.user?.id);
-    sb.auth.onAuthStateChange((_e, sess) => { const before = acct.user?.id; acct.user = sess?.user || null; if(acct.user?.id !== before){ rememberUser(acct.user?.id); if(acct.user){ try{ localStorage.removeItem('lift_skip') }catch(_){} } acct.step = 'email'; refreshSub(); if(acct.user){ track('signed-in'); syncNow(true) } else { syncState = 'local'; render() } } });
-    if(/[?&]signin=1/.test(location.search)){ window.history.replaceState(null, '', location.pathname + '?app'); if(acct.user) toast('Welcome to LIFT!') }
-    if(acct.user){ await syncNow(true); await refreshSub() } else render();
+    const [appM, A, F] = await Promise.all([import(FB_SDK + 'firebase-app.js'), import(FB_SDK + 'firebase-auth.js'), import(FB_SDK + 'firebase-firestore.js')]);
+    const app = appM.initializeApp(CONFIG.firebase);
+    fb = {app, auth:A.getAuth(app), db:F.getFirestore(app), A, F};
+    if(CONFIG.firebaseEmulator){ A.connectAuthEmulator(fb.auth, 'http://127.0.0.1:9099', {disableWarnings:true}); F.connectFirestoreEmulator(fb.db, '127.0.0.1', 8080) }   // kun til test
+    // Kom brugeren tilbage via login-linket i mailen?
+    if(A.isSignInWithEmailLink(fb.auth, location.href)){
+      const email = (() => { try{ return localStorage.getItem('lift_signin_email') }catch(_){ return null } })();
+      if(email) await completeLink(email); else { acct.step = 'confirm'; }
+    }
+    let first = true;
+    A.onAuthStateChanged(fb.auth, async u => {
+      const before = acct.user?.uid; acct.user = toUser(u); acct.ready = true;
+      if(first || acct.user?.uid !== before){
+        first = false; rememberUser(acct.user?.uid);
+        if(acct.user){ try{ localStorage.removeItem('lift_skip') }catch(_){} prepareSyncFor(acct.user.uid); await syncNow(true); refreshSub() }
+        else { syncState = 'local'; applyEntitlement() }
+      }
+    });
     handleCheckoutReturn();
     addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && acct.user) syncNow() });
     addEventListener('online', () => acct.user && syncNow());
   }catch(e){ console.warn('Account unavailable', e); acct.ready = true; acct.offline = !!rememberedUser(); render() }
 }
 
-/* --- Synkronisering: hent → flet → gem --- */
-function scheduleSync(){ if(!sb || !acct.user) return; clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(), 1500) }
-function syncPayload(){
-  const profile = {pu:S.profile.pu}; SYNC_PROFILE.forEach(k => profile[k] = S.profile[k]);
-  const out = {v:3, profile, del:S.del}; COLLS.forEach(k => out[k] = S[k]); return out;
+/* --- Login med e-mail-link --- */
+async function sendCode(e){       // (navnet bruges af skærmene)
+  e && e.preventDefault();
+  const m = ($('#acEmail')?.value || '').trim();
+  if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
+  if(!fb) return toast('Connecting… try again in a moment');
+  acct.busy = true; render();
+  try{
+    await fb.A.sendSignInLinkToEmail(fb.auth, m, {url: appBase() + '?app&signin=1', handleCodeInApp: true});
+    try{ localStorage.setItem('lift_signin_email', m) }catch(_){}
+    acct.email = m; acct.step = 'sent'; track('signin-link-sent');
+  }catch(err){ console.warn(err); toast(err && err.code === 'auth/quota-exceeded' ? 'Too many sign-ins today. Try again later.' : 'Could not send the email. Check your address.') }
+  acct.busy = false; render();
 }
+async function completeLink(email){
+  try{
+    await fb.A.signInWithEmailLink(fb.auth, email, location.href);
+    try{ localStorage.removeItem('lift_signin_email') }catch(_){}
+    acct.step = 'email'; track('signed-in'); toast('Welcome to LIFT!');
+  }catch(err){
+    console.warn(err); acct.step = 'email';
+    toast(err && /expired|invalid-action/.test(err.code || '') ? 'That link has expired. Send a new one.' : 'Could not sign you in. Try again.');
+  }
+  window.history.replaceState(null, '', location.pathname + '?app');
+}
+async function confirmEmail(e){     // linket blev åbnet på en anden enhed/browser
+  e && e.preventDefault();
+  const m = ($('#acEmail')?.value || '').trim(); if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
+  acct.busy = true; render(); await completeLink(m); acct.busy = false; render();
+}
+async function signOut(){
+  if(fb) await fb.A.signOut(fb.auth);
+  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('home'); toast('Signed out');
+}
+function loginHTML(intro){
+  if(!authEnabled()) return '';
+  if(!acct.ready) return `<p class="small mut">Connecting…</p>`;
+  if(acct.step === 'sent') return `<p class="small">We sent a sign-in link to <b>${esc(acct.email)}</b>.</p><p class="small mut">Open the email on this phone and tap the link. Check spam if you can't find it.</p>
+    <button type="button" class="link" onclick="acct.step='email';render()">Use another email or resend</button>`;
+  return `<form onsubmit="${acct.step === 'confirm' ? 'confirmEmail' : 'sendCode'}(event)"><p class="small mut">${acct.step === 'confirm' ? 'Confirm your email to finish signing in.' : (intro || 'Sign in with your email. No password – we email you a sign-in link.')}</p>
+    <div class="row"><input id="acEmail" class="txt grow" type="email" autocomplete="email" required placeholder="you@email.com" aria-label="Your email" value="${esc(acct.email)}">
+    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':acct.step === 'confirm' ? 'Sign in' : 'Send'}</button></div></form>`;
+}
+
+/* --- Synkronisering med Firestore --- */
+// Ved login på en ny konto: data der ikke tilhører nogen konto uploades; data fra en ANDEN konto fjernes fra telefonen.
+function prepareSyncFor(uid){
+  if(S.sync.uid === uid) return;
+  if(S.sync.uid && S.sync.uid !== uid){ const keep = {premium:S.profile.premium}; S = Object.assign(blank(), {}); Object.assign(S.profile, keep) }
+  else COLLS.forEach(k => S[k].forEach(x => S.dirty[x.id] = k));   // første login: upload alt
+  S.sync = {uid, pulled:0, profPushed:0};
+  lsSave();
+}
+function scheduleSync(){ if(!fb || !acct.user) return; clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(), 1500) }
+function markAllDirty(){ COLLS.forEach(k => S[k].forEach(x => S.dirty[x.id] = k)); Object.keys(S.del).forEach(id => { if(!S.dirty[id]) S.dirty[id] = '_' }); }
+function syncProfile(){ const p = {pu:S.profile.pu||0}; SYNC_PROFILE.forEach(k => { if(S.profile[k] !== undefined) p[k] = S.profile[k] }); return p }
+// Ét ændret dokument fra skyen → ind i appen (nyeste ændring vinder)
+function applyRemoteItem(r){
+  if(!r || !r.id || !COLLS.includes(r.c)) return false;
+  const list = S[r.c], i = list.findIndex(x => x.id === r.id), local = i >= 0 ? list[i] : null, u = r.u || 0;
+  if(r.del){
+    if(local && (local.u||0) <= u){ list.splice(i,1); S.del[r.id] = u; delete S.dirty[r.id]; return true }
+    if(!local) S.del[r.id] = Math.max(S.del[r.id]||0, u);
+    return false;
+  }
+  if(S.del[r.id] && S.del[r.id] >= u) return false;
+  if(local && (local.u||0) >= u) return false;
+  let item; try{ item = JSON.parse(r.d) }catch(_){ return false }
+  item.u = u; if(local) list[i] = item; else list.push(item);
+  delete S.dirty[r.id];
+  return true;
+}
+// Bruges også af backup-gendannelse: fletter et helt datasæt ind (nyeste vinder) og markerer det til upload
 function mergeRemote(r){
   if(!r || typeof r !== 'object') return false;
   let changed = false;
-  const del = Object.assign({}, r.del || {}, S.del);
-  Object.entries(r.del || {}).forEach(([id,t]) => { if(!S.del[id] || S.del[id] < t) del[id] = t });
-  S.del = del;
+  Object.entries(r.del || {}).forEach(([id,t]) => { if(!S.del[id] || S.del[id] < t) S.del[id] = t });
   COLLS.forEach(k => {
     const map = new Map(S[k].map(x => [x.id, x]));
-    (Array.isArray(r[k]) ? r[k] : []).forEach(x => { if(!x || !x.id) return; const l = map.get(x.id); if(!l || (x.u||0) > (l.u||0)){ map.set(x.id, x); changed = true } });
-    const list = [...map.values()].filter(x => !(del[x.id] && del[x.id] >= (x.u||0)));
-    if(list.length !== S[k].length) changed = true;
-    S[k] = list;
+    (Array.isArray(r[k]) ? r[k] : []).forEach(x => { if(!x || !x.id) return; const l = map.get(x.id); if(!l || (x.u||0) > (l.u||0)){ map.set(x.id, x); S.dirty[x.id] = k; changed = true } });
+    S[k] = [...map.values()].filter(x => !(S.del[x.id] && S.del[x.id] >= (x.u||0)));
   });
   if(r.profile && (r.profile.pu||0) > (S.profile.pu||0)){ SYNC_PROFILE.forEach(k => { if(k in r.profile) S.profile[k] = r.profile[k] }); S.profile.pu = r.profile.pu; changed = true }
   S.workouts.sort((a,b) => a.start - b.start);
   return changed;
 }
+function syncPayload(){ const out = {v:4, profile:syncProfile(), del:S.del}; COLLS.forEach(k => out[k] = S[k]); return out }
 async function syncNow(first){
-  if(!sb || !acct.user) return;
+  if(!fb || !acct.user) return;
   if(syncing){ syncAgain = true; return }
   syncing = true; syncState = 'syncing'; updateSyncChip();
+  const {F, db} = fb, uid = acct.user.uid, items = F.collection(db, 'users', uid, 'items');
   try{
-    const {data, error} = await sb.from('user_data').select('data').eq('user_id', acct.user.id).maybeSingle();
-    if(error) throw error;
-    const changed = data && data.data ? mergeRemote(data.data) : false;
-    const {error:e2} = await sb.from('user_data').upsert({user_id:acct.user.id, data:syncPayload(), updated_at:new Date().toISOString()});
-    if(e2) throw e2;
-    lsSave(); syncState = 'ok';
+    // 1) Hent det, der er ændret siden sidst (på andre enheder)
+    const since = S.sync.pulled || 0;
+    const snap = await F.getDocs(since ? F.query(items, F.where('su', '>', F.Timestamp.fromMillis(since - 2000))) : items);
+    let changed = false, maxSu = since;
+    snap.forEach(d => { const r = d.data(); const su = r.su && r.su.toMillis ? r.su.toMillis() : 0; if(su > maxSu) maxSu = su; if(applyRemoteItem(r)) changed = true });
+    const pd = await F.getDoc(F.doc(db, 'users', uid));
+    const rp = pd.exists() ? pd.data().profile : null;
+    if(rp && (rp.pu||0) > (S.profile.pu||0)){ SYNC_PROFILE.forEach(k => { if(k in rp) S.profile[k] = rp[k] }); S.profile.pu = rp.pu; S.sync.profPushed = rp.pu; changed = true }
+    if(changed) S.workouts.sort((a,b) => a.start - b.start);
+    // 2) Send egne ændringer op (højst 400 pr. omgang)
+    const pending = Object.entries(S.dirty), sent = {};
+    for(let i = 0; i < pending.length; i += 400){
+      const batch = F.writeBatch(db);
+      pending.slice(i, i + 400).forEach(([id, c]) => {
+        const item = c !== '_' && S[c] ? S[c].find(x => x.id === id) : null, ref = F.doc(items, id);
+        if(item){ sent[id] = item.u || 0; batch.set(ref, {id, c, u:item.u || Date.now(), d:JSON.stringify(item), su:F.serverTimestamp()}) }
+        else { const dc = c !== '_' ? c : 'workouts'; sent[id] = S.del[id] || Date.now(); batch.set(ref, {id, c:dc, u:sent[id], del:true, su:F.serverTimestamp()}) }
+      });
+      await batch.commit();
+    }
+    Object.entries(sent).forEach(([id, u]) => { const c = S.dirty[id]; const cur = c && c !== '_' && S[c] ? S[c].find(x => x.id === id) : null; if(!cur || (cur.u||0) <= u) delete S.dirty[id] });
+    if((S.profile.pu||0) > (S.sync.profPushed||0)){ await F.setDoc(F.doc(db, 'users', uid), {profile:syncProfile(), email:acct.user.email || '', updated:F.serverTimestamp()}, {merge:true}); S.sync.profPushed = S.profile.pu }
+    S.sync.pulled = maxSu; lsSave(); syncState = 'ok';
     if(changed || first) render(); else updateSyncChip();
   }catch(e){ console.warn('sync', e); syncState = navigator.onLine === false ? 'offline' : 'error'; updateSyncChip() }
   syncing = false;
@@ -286,13 +387,19 @@ function syncChip(){
 }
 function updateSyncChip(){ const c = $('#syncChip'); if(c) c.outerHTML = syncChip() }
 
-/* --- Abonnement --- */
+/* --- Abonnement (skrives af Stripe-udvidelsen) --- */
 async function refreshSub(){
-  if(!sb) return;
+  if(!fb) return;
   if(!acct.user){ acct.sub = null; applyEntitlement(); return }
-  const {data, error} = await sb.from('subscriptions').select('status,plan,current_period_end,cancel_at_period_end').eq('user_id', acct.user.id).maybeSingle();
-  if(error) return render();
-  acct.sub = data; applyEntitlement();
+  try{
+    const {F, db} = fb;
+    const snap = await F.getDocs(F.query(F.collection(db, 'customers', acct.user.uid, 'subscriptions'), F.where('status', 'in', ['trialing','active','past_due'])));
+    const d = snap.docs[0] ? snap.docs[0].data() : null;
+    const it = d && d.items && d.items[0], iv = it && ((it.price && it.price.recurring && it.price.recurring.interval) || (it.plan && it.plan.interval));
+    const end = d && d.current_period_end ? (d.current_period_end.toDate ? d.current_period_end.toDate() : new Date(d.current_period_end)) : null;
+    acct.sub = d ? {status:d.status, plan: iv === 'year' ? 'year' : 'month', current_period_end: end ? end.toISOString() : null, cancel_at_period_end: !!d.cancel_at_period_end} : null;
+    applyEntitlement();
+  }catch(e){ console.warn('subscription', e); render() }
 }
 function applyEntitlement(){
   const s = acct.sub, ok = s && ['active','trialing','past_due'].includes(s.status) && (!s.current_period_end || new Date(s.current_period_end) > new Date());
@@ -300,69 +407,37 @@ function applyEntitlement(){
   else if(S.profile.premium && S.profile.premium.source === 'stripe') S.profile.premium = null;
   lsSave(); render();
 }
-async function callFn(name, body){
-  const {data, error} = await sb.functions.invoke(name, {body: body || {}});
-  if(error){
-    const st = error.context && error.context.status;
-    let code = 'server_error'; try{ code = (await error.context.json()).error || code }catch(_){}
-    if(st === 401 && code === 'server_error') code = 'not_signed_in';
-    if(code === 'not_signed_in'){ try{ await sb.auth.signOut() }catch(_){} acct.user = null; acct.step = 'email' }
-    throw code;
-  }
-  return data;
-}
-const ERR = {not_signed_in:'Your sign-in has expired. Please sign in again.', already_premium:'You already have Premium.', no_customer:'No subscription found.', unknown_plan:'Unknown plan.', server_error:'Something went wrong. Please try again.'};
-
-/* --- Login med e-mail (link eller kode) --- */
-async function sendCode(e){
-  e && e.preventDefault();
-  const m = ($('#acEmail')?.value || '').trim();
-  if(!/^\S+@\S+\.\S+$/.test(m)) return toast('Please enter a valid email');
-  if(!sb) return toast('Connecting… try again in a moment');
-  acct.busy = true; render();
-  const {error} = await sb.auth.signInWithOtp({email:m, options:{shouldCreateUser:true, emailRedirectTo: location.origin + location.pathname + '?app&signin=1'}});
-  acct.busy = false;
-  if(error){ toast(error.status === 429 ? 'Too many tries. Wait a minute and try again.' : 'Could not send the email. Check your address.'); return render() }
-  acct.email = m; acct.step = 'code'; render(); setTimeout(()=>$('#acCode')?.focus(), 50);
-}
-async function verifyCode(e){
-  e && e.preventDefault();
-  const code = ($('#acCode')?.value || '').replace(/\s/g,'');
-  if(!/^\d{6,10}$/.test(code)) return toast('Enter the code from the email');
-  acct.busy = true; render();
-  const {error} = await sb.auth.verifyOtp({email:acct.email, token:code, type:'email'});
-  acct.busy = false;
-  if(error){ toast('That code did not work. Check it or send a new one.'); return render() }
-  acct.step = 'email'; toast('Welcome to LIFT!');
-}
-async function signOut(){
-  if(sb) await sb.auth.signOut();
-  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('home'); toast('Signed out');
-}
-function loginHTML(intro){
-  if(!authEnabled()) return '';
-  if(!acct.ready) return `<p class="small mut">Connecting…</p>`;
-  if(acct.step === 'code') return `<form onsubmit="verifyCode(event)"><p class="small">We sent an email to <b>${esc(acct.email)}</b>.</p><p class="small mut"><b>Tap the sign-in link</b> in the email – or, if the email shows a code, enter it here:</p>
-    <input id="acCode" class="txt" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" aria-label="Code from email" style="letter-spacing:4px;font-size:22px;text-align:center">
-    <button class="btn pri block" style="margin-top:10px" ${acct.busy?'disabled':''}>${acct.busy?'Checking…':'Sign in'}</button>
-    <button type="button" class="link" onclick="acct.step='email';render()">Use another email or resend</button></form>`;
-  return `<form onsubmit="sendCode(event)"><p class="small mut">${intro || 'Sign in with your email. No password – we email you a sign-in link.'}</p>
-    <div class="row"><input id="acEmail" class="txt grow" type="email" autocomplete="email" required placeholder="you@email.com" aria-label="Your email" value="${esc(acct.email)}">
-    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':'Send'}</button></div></form>`;
-}
 
 /* --- Betaling --- */
 let plan = 'year', premFrom = '';
 async function startCheckout(){
-  if(!acct.user) return toast('Please sign in first');
+  if(!acct.user || !fb) return toast('Please sign in first');
   acct.busy = true; render(); track('checkout-start-' + plan);
-  try{ const d = await callFn('create-checkout', {plan}); location.href = d.url }
-  catch(code){ acct.busy = false; render(); toast(ERR[code] || ERR.server_error); if(code==='already_premium') refreshSub() }
+  const fail = msg => { acct.busy = false; render(); toast(msg || 'Something went wrong. Please try again.') };
+  try{
+    const {F, db} = fb, uid = acct.user.uid;
+    let hadSub = false;   // kun én gratis prøveperiode pr. person
+    try{ hadSub = !(await F.getDocs(F.collection(db, 'customers', uid, 'subscriptions'))).empty }catch(_){}
+    const session = {price: plan === 'year' ? CONFIG.stripePriceYear : CONFIG.stripePriceMonth, mode:'subscription',
+      success_url: appBase() + '?app&checkout=success', cancel_url: appBase() + '?app&checkout=cancel', allow_promotion_codes:true};
+    if(!hadSub && CONFIG.trialDays > 0) session.trial_period_days = CONFIG.trialDays;
+    const ref = await F.addDoc(F.collection(db, 'customers', uid, 'checkout_sessions'), session);
+    let done = false;
+    const unsub = F.onSnapshot(ref, s => { const d = s.data() || {};
+      if(d.error && !done){ done = true; unsub(); fail(d.error.message) }
+      if(d.url && !done){ done = true; unsub(); location.assign(d.url) } });
+    setTimeout(() => { if(!done){ done = true; unsub(); fail('Payment is not ready yet. Please try again in a moment.') } }, 30000);
+  }catch(e){ console.warn(e); fail() }
 }
 async function openPortal(){
+  if(!fb || !acct.user) return toast('Please sign in first');
   acct.busy = true; render();
-  try{ const d = await callFn('customer-portal'); location.href = d.url }
-  catch(code){ acct.busy = false; render(); toast(ERR[code] || ERR.server_error) }
+  try{
+    const Fn = await import(FB_SDK + 'firebase-functions.js');
+    const call = Fn.httpsCallable(Fn.getFunctions(fb.app, CONFIG.firebaseFunctionsRegion || 'europe-west1'), 'ext-firestore-stripe-payments-createPortalLink');
+    const {data} = await call({returnUrl: appBase() + '?app', locale:'auto'});
+    location.assign(data.url);
+  }catch(e){ console.warn(e); acct.busy = false; render(); toast('Could not open subscription settings. Please try again.') }
 }
 async function handleCheckoutReturn(){
   const q = new URLSearchParams(location.search), r = q.get('checkout');
@@ -370,7 +445,7 @@ async function handleCheckoutReturn(){
   window.history.replaceState(null, '', location.pathname + '?app');
   if(r === 'cancel'){ toast('Payment cancelled – nothing was charged'); return }
   track('checkout-success'); toast('Thanks! Activating Premium…');
-  for(let i=0;i<8 && !(S.profile.premium && S.profile.premium.source==='stripe');i++){ await new Promise(r=>setTimeout(r,2500)); await refreshSub() }
+  for(let i = 0; i < 10 && !(S.profile.premium && S.profile.premium.source === 'stripe'); i++){ await new Promise(r => setTimeout(r, 2500)); if(acct.user) await refreshSub() }
   if(isPremium()){ toast('Premium is active – enjoy!'); go('premium') } else toast('Payment received. Premium will appear in a moment – try reopening the app.');
 }
 

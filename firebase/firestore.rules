@@ -1,0 +1,39 @@
+rules_version = '2';
+// LIFT – Firestore-sikkerhedsregler. Indsæt hele filen i Firebase → Firestore Database → Rules → Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Brugerens egne data: profil (users/{uid}) og alle træninger, måltider, mål osv. (users/{uid}/items/{id}).
+    // Kun den indloggede bruger selv kan læse og skrive.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      match /items/{itemId} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        // kun de felter appen bruger, og højst ca. 200 KB data pr. dokument
+        allow create, update: if request.auth != null && request.auth.uid == uid
+                              && request.resource.data.keys().hasOnly(['id', 'c', 'u', 'd', 'del', 'su'])
+                              && (!('d' in request.resource.data) || request.resource.data.d.size() < 200000);
+      }
+    }
+
+    // Stripe-udvidelsen ("Run Payments with Stripe").
+    // Brugeren må se sit eget abonnement og starte en betaling – men ALDRIG selv skrive sit abonnement.
+    match /customers/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      match /checkout_sessions/{id} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+      match /subscriptions/{id} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+      }
+      match /payments/{id} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+    match /products/{id} {
+      allow read: if true;
+      match /prices/{id} { allow read: if true; }
+      match /tax_rates/{id} { allow read: if true; }
+    }
+  }
+}
