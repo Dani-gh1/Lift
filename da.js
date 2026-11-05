@@ -4,21 +4,21 @@
 
 addDA({
   // Faner og overskrifter
-  'Main menu':'Hovedmenu', 'Home':'Hjem', 'Train':'Træning', 'Food':'Mad', 'Goals':'Mål', 'Profile':'Profil', 'Stats':'Statistik',
+  'Main menu':'Hovedmenu', 'Train':'Træning', 'Food':'Mad', 'Goals':'Mål', 'Profile':'Profil', 'Stats':'Statistik',
   'Log':'Logbog', 'Routines':'Rutiner', 'Body weight':'Kropsvægt', 'Calendar':'Kalender', 'Templates':'Skabeloner',
 
   // Fælles knapper
   'Close':'Luk', 'Cancel':'Annullér', 'Save':'Gem', 'Delete':'Slet', 'Edit':'Redigér', 'Done':'Færdig', 'Back':'Tilbage',
   'Continue':'Fortsæt', 'Keep':'Behold', 'Remove':'Fjern', 'Removed':'Fjernet', 'New':'Ny', 'More':'Mere', 'Options':'Valg',
   'Start':'Start', 'Start now':'Start nu', 'Skip':'Spring over', 'Send':'Send', 'Search':'Søg', 'Find':'Find', 'Scan':'Scan',
-  'Restore':'Gendan', 'Discard':'Kassér', 'See all':'Se alle', 'Next goal':'Næste mål', 'Now':'Nu', 'Today':'I dag',
+  'Restore':'Gendan', 'Discard':'Kassér', 'Next goal':'Næste mål', 'Now':'Nu', 'Today':'I dag',
   'This week':'Denne uge', 'Terms':'Vilkår', 'Privacy':'Privatliv', 'Settings':'Indstillinger', 'Language':'Sprog',
 
   // Generelt
   'Could not save – is your storage full?':'Kunne ikke gemme – er lageret fyldt?',
   'Unlock with Premium':'Lås op med Premium',
   'Unknown exercise':'Ukendt øvelse',
-  'sec':'sek', 'reps':'reps', 'h':'t', 'set':'sæt', 'sets':'sæt', 'goal':'mål', 'over':'over', 'never':'aldrig', 'no data':'ingen data',
+  'sec':'sek', 'reps':'reps', 'h':'t', 'set':'sæt', 'sets':'sæt', 'goal':'mål', 'never':'aldrig', 'no data':'ingen data',
   'Animation of {n}':'Animation af {n}',
   'Hold still and breathe calmly.':'Hold stillingen, og træk vejret roligt.',
   'Explode up with your hips, let the bell fall back.':'Skyd hofterne frem, og lad kettlebellen svinge tilbage.',
@@ -98,7 +98,6 @@ addDA({
   'Premium is coming soon. LIFT is free to use in the meantime.':'Premium kommer snart. Indtil da er LIFT gratis.',
   'Continue with free':'Fortsæt gratis',
   'Upgrade to Premium':'Opgradér til Premium',
-  'Try Premium':'Prøv Premium',
   'Stats, barcode scanner, macros & vitamins':'Statistik, stregkodescanner, makroer og vitaminer',
   'Trial until {d}':'Prøveperiode til {d}',
   'Ends {d}':'Slutter {d}',
@@ -254,14 +253,13 @@ addDA({
   'Routine deleted':'Rutine slettet',
   'Add to my routines':'Føj til mine rutiner',
   'Added to your routines':'Føjet til dine rutiner',
-  'Start routine':'Start rutine',
 
   // Kropsvægt
   'Today’s weight':'Dagens vægt',
   'Body weight in kg':'Kropsvægt i kg',
   'Goal {g} kg · {d} kg to go':'Mål {g} kg · {d} kg tilbage',
   'Log your weight now and then to see how it changes.':'Vej dig en gang imellem for at se, hvordan vægten ændrer sig.',
-  'See the full weight chart under Goals → Stats with Premium.':'Se hele vægtgrafen under Mål → Statistik med Premium.',
+  'See the full weight chart under Stats with Premium.':'Se hele vægtgrafen under Statistik med Premium.',
   'Enter your weight in kg':'Skriv din vægt i kg',
   'Weight logged':'Vægt gemt',
 
@@ -300,31 +298,15 @@ addDA({
   'Best':'Bedste',
   'Exercise':'Øvelse',
 
-  // Hjem
-  'Good night':'Hej natteravn',
-  'Good morning':'Godmorgen',
-  'Good afternoon':'God eftermiddag',
-  'Good evening':'Godaften',
-  'Trained today':'Trænet i dag',
-  'Start another workout':'Start en træning mere',
-  'Ready to train?':'Klar til at træne?',
-  'Next up: {n}':'Næste: {n}',
-  'Weekly goal done – bonus workout?':'Ugens mål er nået – bonustræning?',
-  '{n} workout left this week':'{n} træning tilbage denne uge',
-  '{n} workouts left this week':'{n} træninger tilbage denne uge',
+  // Uge, fremgang og rekorder
   'kcal left':'kcal tilbage',
   'kcal over':'kcal over',
   'Eaten':'Spist',
-  'Tap to see your meals':'Tryk for at se dine måltider',
-  'Nothing logged yet today':'Intet logget i dag endnu',
-  'Log food':'Log mad',
   '{n} week streak':'{n} uge i træk',
   '{n} weeks streak':'{n} uger i træk',
   '{a} of {b} workouts':'{a} af {b} træninger',
   'Goal reached':'Mål nået',
   '{n} to go':'{n} tilbage',
-  'Set your first goal':'Sæt dit første mål',
-  'A target weight, a lift like bench 100 kg, or 10 pull-ups.':'En målvægt, et løft som 100 kg i bænkpres eller 10 pull-ups.',
   'New records this week':'Nye rekorder denne uge',
 
   // Mad

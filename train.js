@@ -40,12 +40,6 @@ function weekDaysHTML(){
 }
 const durText = ms => { const m = Math.max(1, Math.round(ms/60000)); return m >= 60 ? `${Math.floor(m/60)} ${t('h')} ${m%60} min` : `${m} min` };
 const defaultName = () => { const h = new Date().getHours(); return h < 11 ? t('Morning workout') : h < 17 ? t('Afternoon workout') : t('Evening workout') };
-function nextRoutine(){
-  // den rutine, der er længst siden man har lavet
-  if(!S.routines.length) return null;
-  const last = id => { for(let i = S.workouts.length-1; i >= 0; i--) if(S.workouts[i].routineId === id) return S.workouts[i].start; return 0 };
-  return S.routines.slice().sort((a,b) => last(a.id) - last(b.id))[0];
-}
 
 /* ---------- Logbog (Train-fanen) ---------- */
 let logEdit = false;
@@ -501,7 +495,7 @@ function openWeight(){
     ${ws.length >= 2 ? `<div class="center" style="margin:6px 0">${spark(weights().slice(-20).map(b => b.kg), 300, 64)}</div>` : ''}
     ${wg && ws[0] ? `<p class="small mut center">${ic('target','xs')} ${t('Goal {g} kg · {d} kg to go', {g:fmt(wg.target), d:fmt(Math.abs(ws[0].kg - wg.target))})}</p>` : ''}
     ${ws.map(b => `<div class="row between" style="padding:10px 0;border-top:1px solid var(--line)"><span class="small mut">${esc(weekday(b.d))}</span><span class="row" style="gap:6px"><b>${fmt(b.kg)} kg</b><button class="iconbtn flat" onclick="removeItem('body','${b.id}');openWeight();render()" aria-label="${t('Delete')}">${ic('trash','sm')}</button></span></div>`).join('') || `<p class="small mut">${t('Log your weight now and then to see how it changes.')}</p>`}
-    ${!isPremium() && ws.length >= 2 ? `<p class="xs mut" style="margin-top:10px">${ic('lock','xs')} ${t('See the full weight chart under Goals → Stats with Premium.')}</p>` : ''}`);
+    ${!isPremium() && ws.length >= 2 ? `<p class="xs mut" style="margin-top:10px">${ic('lock','xs')} ${t('See the full weight chart under Stats with Premium.')}</p>` : ''}`);
   setTimeout(() => $('#bw')?.focus(), 60);
 }
 function logWeight(e){

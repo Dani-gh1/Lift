@@ -1,7 +1,6 @@
-/* LIFT – Mål: daglige/ugentlige mål + egne mål (kropsvægt, øvelser) med fremgang. Statistik ligger som fane her. */
+/* LIFT – Mål: daglige/ugentlige mål + egne mål (kropsvægt, øvelser) med fremgang. */
 'use strict';
 
-let goalsSeg = 'goals';
 const clamp01 = v => Math.max(0, Math.min(1, v));
 
 /* ---------- Udregning ---------- */
@@ -66,11 +65,6 @@ function goalCard(g){
     <div class="row between xs"><span class="mut">${t('Start')} ${st.startText}</span><span class="${st.pace ? st.pace[0] : 'mut'}">${st.pace && !st.reached ? st.pace[1] + ' · ' : ''}${st.left}</span></div>
   </button>`;
 }
-// Lille udgave til Home
-function goalMini(g){
-  const st = goalState(g);
-  return `<button class="lrow" onclick="goalDetail('${g.id}')"><span class="bi sm">${ic(st.icon,'sm')}</span><span class="grow" style="min-width:0"><b class="ell">${esc(st.title)}</b>${bar(st.pct,'thin')}</span><span class="xs mut right">${Math.round(st.pct*100)}%<br>${st.left}</span></button>`;
-}
 function targetsCard(){
   const g = goals(), tot = dayTotals(dayKey()).t, tw = thisWeek().length, wg = S.profile.weeklyGoal || 3, pr = isPremium();
   const row = (icon, label, val, goal, unit, pct, extra='') => `<div class="trow"><span class="bi sm">${ic(icon,'sm')}</span><div class="grow"><div class="row between small"><b>${label}</b><span class="mut">${val} / ${goal}${unit}</span></div>${bar(pct,'thin')}${extra}</div></div>`;
@@ -83,15 +77,9 @@ function targetsCard(){
 }
 
 SCREENS.goals = app => {
+  const active = (S.goals||[]).filter(g => !g.done), done = (S.goals||[]).filter(g => g.done).sort((a,b) => b.done - a.done);
   app.innerHTML = `<div class="wrap">
     ${header(`<h1>${t('Goals')}</h1>`, syncChip())}
-    <div class="seg" role="tablist"><button role="tab" aria-selected="${goalsSeg==='goals'}" class="${goalsSeg==='goals'?'on':''}" onclick="goalsSeg='goals';render()">${t('My goals')}</button><button role="tab" aria-selected="${goalsSeg==='stats'}" class="${goalsSeg==='stats'?'on':''}" onclick="goalsSeg='stats';render()">${t('Stats')} ${isPremium() ? '' : ic('lock','xs')}</button></div>
-    <div id="segBody"></div>
-  </div>`;
-  const body = $('#segBody');
-  if(goalsSeg === 'stats') return renderStats(body);
-  const active = (S.goals||[]).filter(g => !g.done), done = (S.goals||[]).filter(g => g.done).sort((a,b) => b.done - a.done);
-  body.innerHTML = `
     <div class="sect"><span>${t('Daily & weekly')}</span><button class="link" onclick="editTargets()">${ic('edit','xs')} ${t('Edit')}</button></div>
     ${targetsCard()}
     <div class="sect"><span>${t('My goals')}</span><button class="link" onclick="newGoal()">${ic('plus','xs')} ${t('New goal')}</button></div>
@@ -103,10 +91,8 @@ SCREENS.goals = app => {
     </div>`}
     ${done.length ? `<div class="sect"><span>${t('Achieved')}</span><span class="xs mut">${done.length}</span></div>
       ${done.map(g => `<button class="lrow" onclick="goalDetail('${g.id}')"><span class="bi sm gold">${ic('trophy','sm')}</span><span class="grow"><b>${esc(goalState(g).title)}</b><span class="xs mut">${t('Reached {d}', {d:dk(g.done)})}</span></span></button>`).join('')}` : ''}
-  `;
+  </div>`;
 };
-function openStats(){ goalsSeg = 'stats'; go('goals') }
-SCREENS.stats = () => openStats();
 
 /* ---------- Daglige & ugentlige mål ---------- */
 function editTargets(){
@@ -177,7 +163,7 @@ function saveGoal(){
     if(d.target <= best) return toast(t('You’ve already done {v} – aim higher!', {v:fmt(best)}));
     if(!S.goals.find(g => g.id === d.id)) d.start = best;
   }
-  upsert('goals', d); gDraft = null; closeModal(); track('goal-created-' + d.type); goalsSeg = 'goals';
+  upsert('goals', d); gDraft = null; closeModal(); track('goal-created-' + d.type);
   if(view !== 'goals') go('goals'); else render();
   toast(t('Goal saved – you got this!'));
 }

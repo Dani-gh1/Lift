@@ -1,4 +1,4 @@
-/* LIFT – Statistik (Premium) ud fra træningsloggen, kropsvægt og mad */
+/* LIFT – Statistik-fanen. Ugens træning og nye rekorder kan alle se; grafer og tal er Premium. */
 'use strict';
 
 let statEx = null, statRange = 12;   // uger
@@ -16,7 +16,42 @@ function prList(){
     .sort((a,b) => (b.e||0) - (a.e||0));
 }
 
-// Tegnes inde i Goals-skærmen (fanen "Stats")
+// Nye rekorder de seneste 7 dage
+function recentPRs(){
+  const since = Date.now() - 7*DAY, out = [];
+  S.workouts.filter(w => w.start >= since).forEach(w => w.ex.forEach(e => {
+    const x = exInfo(e.id), sets = doneSets(e); if(!sets.length) return;
+    const val = s => x.t === 'w' ? e1rm(s) : s.reps;
+    const top = sets.reduce((a,s) => val(s) > val(a) ? s : a, sets[0]);
+    let prev = 0; S.workouts.forEach(o => { if(o.start >= w.start) return; o.ex.forEach(f => { if(f.id === e.id) doneSets(f).forEach(s => prev = Math.max(prev, val(s))) }) });
+    if(prev > 0 && val(top) > prev + 0.01 && !out.find(p => p.id === e.id)) out.push({id:e.id, n:x.n, v:setText(x, top), d:w.start});
+  }));
+  return out.slice(-3).reverse();
+}
+// Ugens træning i forhold til ugemålet
+function weekCard(){
+  const tw = thisWeek().length, wg = S.profile.weeklyGoal || 3, streak = weekStreak();
+  return `<div class="card">
+    <div class="row between small"><b>${t('{a} of {b} workouts', {a:tw, b:wg})}</b><span class="mut">${tw >= wg ? t('Goal reached') + ' 🎉' : t('{n} to go', {n:wg - tw})}</span></div>
+    <div class="track big"><i style="width:${Math.min(100, tw/wg*100)}%"></i></div>
+    ${weekDaysHTML()}
+    <p class="xs mut" style="margin:12px 0 0">${ic('flame','xs')} ${t(streak === 1 ? '{n} week streak' : '{n} weeks streak', {n:streak})}</p>
+  </div>`;
+}
+
+SCREENS.stats = app => {
+  const prs = recentPRs();
+  app.innerHTML = `<div class="wrap">
+    ${header(`<h1>${t('Stats')}</h1>`, syncChip())}
+    <div class="sect"><span>${t('This week')}</span></div>
+    ${weekCard()}
+    ${prs.length ? `<div class="sect"><span>${t('New records this week')}</span></div>${prs.map(p => `<div class="lrow static"><span class="bi sm gold">${ic('trophy','sm')}</span><span class="grow"><b>${esc(p.n)}</b><span class="xs mut">${dk(p.d)}</span></span><b class="neon">${esc(p.v)}</b></div>`).join('')}` : ''}
+    <div id="statBody"></div>
+  </div>`;
+  renderStats($('#statBody'));
+};
+
+// Premium-delen af Statistik (gratis brugere ser en smagsprøve)
 function renderStats(app){
   if(!isPremium()) return statsTeaser(app);
   const weeks = weeksBack(statRange), from = weeks[0];

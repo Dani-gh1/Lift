@@ -303,7 +303,7 @@ async function confirmEmail(e){     // linket blev åbnet på en anden enhed/bro
 }
 async function signOut(){
   if(fb) await fb.A.signOut(fb.auth);
-  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('home'); toast(t('Signed out'));
+  acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('train'); toast(t('Signed out'));
 }
 function loginHTML(intro){
   if(!authEnabled()) return '';
@@ -462,11 +462,11 @@ async function handleCheckoutReturn(){
 }
 
 /* ============================== NAVIGATION ============================== */
-let view = 'home';
-const TABS = [['home','Home','home'],['train','Train','dumbbell'],['food','Food','apple'],['goals','Goals','target'],['profile','Profile','user']];
+let view = 'train';
+const TABS = [['train','Train','dumbbell'],['stats','Stats','chart'],['food','Food','apple'],['goals','Goals','target'],['profile','Profile','user']];
 const SCREENS = {};   // udfyldes af train.js, food.js, stats.js, profile.js
-let prevView = 'home';
-function go(v){ if(v !== 'home') $('#installBox')?.remove(); if(v !== view && !['premium','done','routine','workout','routines'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
+let prevView = 'train';
+function go(v){ if(v !== 'train') $('#installBox')?.remove(); if(v !== view && !['premium','done','routine','workout','routines'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
 function render(){
   const gate = appGate();
   const full = gate || ['workout','done','premium','routine','routines'].includes(view);
@@ -475,7 +475,7 @@ function render(){
   $('#tabs .in').innerHTML = TABS.map(([k,l,i]) => `<button class="${view===k?'on':''}" onclick="go('${k}')" aria-label="${t(l)}" ${view===k?'aria-current="page"':''}>${ic(i)}${t(l)}</button>`).join('');
   const app = $('#app');
   if(gate) return SCREENS[gate](app);
-  (SCREENS[view] || SCREENS.home)(app);
+  (SCREENS[view] || SCREENS.train)(app);
   renderRestBar(); renderMiniBar(full);
 }
 // Hvad skal vises før selve appen? 1) splash mens vi tjekker login 2) opret konto/log ind 3) Premium-tilbud
@@ -565,7 +565,7 @@ addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPromp
 addEventListener('appinstalled', () => { $('#installBox')?.remove(); toast(t('LIFT was added to your home screen')); track('installed') });
 function showInstall(force){
   if(isStandalone() || window.top !== window.self) return;
-  if(!force && (view !== 'home' || S.current || $('#modal .sheet'))) return;   // aldrig midt i en træning
+  if(!force && (view !== 'train' || S.current || $('#modal .sheet'))) return;   // aldrig midt i en træning
   try{ if(!force && localStorage.getItem('lift_noinstall')) return }catch(e){}
   if(!force && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) return;
   $('#installBox')?.remove();
@@ -582,7 +582,7 @@ async function doInstall(){ if(!deferredPrompt) return; deferredPrompt.prompt();
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 /* ============================== START ============================== */
-let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(()=>{ if(['goals','home','train'].includes(view) && !$('#modal .sheet')) render() }, 200) });
+let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(()=>{ if(['goals','stats','train'].includes(view) && !$('#modal .sheet')) render() }, 200) });
 function start(){
   load();
   LANG = S.profile.lang || detectLang(); document.documentElement.lang = LANG;

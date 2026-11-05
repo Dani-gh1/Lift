@@ -55,7 +55,7 @@ SCREENS.offer = app => {
   </div>`;
   track('offer-view');
 };
-function closeOffer(){ setProfile('offerSeen', true); S.profile.onboarded = true; lsSave(); view = 'home'; render(); setTimeout(() => showInstall(), 3000) }
+function closeOffer(){ setProfile('offerSeen', true); S.profile.onboarded = true; lsSave(); view = 'train'; render(); setTimeout(() => showInstall(), 3000) }
 
 function bodyForm(){
   const p = S.profile, f = (id, label, val, unit, mode='numeric') => `<label class="fld"><span class="xs mut">${label}</span><span class="row"><input id="${id}" class="txt" inputmode="${mode}" value="${val ?? ''}"><small class="mut">${unit}</small></span></label>`;
@@ -120,7 +120,7 @@ async function doReset(){
   COLLS.forEach(k => S[k].forEach(x => { del[x.id] = now; dirty[x.id] = k }));
   const keep = {premium:S.profile.premium}, sync = S.sync;
   S = blank(); S.del = del; S.dirty = dirty; S.sync = sync; Object.assign(S.profile, keep); S.profile.pu = now; S.profile.offerSeen = true; S.profile.onboarded = true;
-  save(); stopRest(); closeModal(); toast(t('Data deleted')); go('home');
+  save(); stopRest(); closeModal(); toast(t('Data deleted')); go('train');
 }
 
 
@@ -147,7 +147,7 @@ function importJSON(){
         $('#doImp').onclick = () => {
           if(d.version >= 3){ mergeRemote(d); if(d.profile) Object.assign(S.profile, Object.fromEntries(SYNC_PROFILE.filter(k => k in d.profile).map(k => [k, d.profile[k]]))) }
           else { const keep = S; migrateV2(d); const migrated = S; S = keep; mergeRemote(migrated) }
-          S.profile.pu = Date.now(); save(); closeModal(); toast(t('Backup restored')); go('home') };
+          S.profile.pu = Date.now(); save(); closeModal(); toast(t('Backup restored')); go('train') };
       }catch(e){ toast(t('That file is not a valid LIFT backup')) } };
     rd.readAsText(f) };
   inp.click();
@@ -174,7 +174,7 @@ function loadDemo(){
     upsert('goals', {id:newId(), type:'lift', exId:'bench', reps:1, start:50, target:80, created:now - 50*DAY, deadline:now + 60*DAY, done:null});
     upsert('goals', {id:newId(), type:'lift', exId:'pullup', reps:1, start:3, target:12, created:now - 50*DAY, deadline:null, done:null});
   }
-  S.workouts.sort((a,b) => a.start - b.start); markAllDirty(); save(); toast(t('Sample data loaded')); go('home');
+  S.workouts.sort((a,b) => a.start - b.start); markAllDirty(); save(); toast(t('Sample data loaded')); go('train');
 }
 
 /* ---------- Premium ---------- */
@@ -182,7 +182,7 @@ function openPremium(from){ premFrom = from || ''; track('premium-view'); if(fro
 SCREENS.premium = app => {
   const yes = ic('check'), no = '<span class="no">—</span>', active = S.profile.premium && S.profile.premium.source === 'stripe';
   app.innerHTML = `<div class="wrap">
-    ${header(`<button class="iconbtn back" onclick="go(prevView || 'home')" aria-label="${t('Back')}">${ic('chevL')}</button><h1>Premium</h1>`, '')}
+    ${header(`<button class="iconbtn back" onclick="go(prevView || 'train')" aria-label="${t('Back')}">${ic('chevL')}</button><h1>Premium</h1>`, '')}
     ${active ? buyHTML() : ''}
     <div class="hero"><span class="pill">${ic('crown')} LIFT Premium</span>
       <h2 style="margin-top:12px">${t('Train smarter. Eat smarter.')}</h2>
