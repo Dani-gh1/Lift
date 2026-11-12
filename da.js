@@ -118,6 +118,8 @@ addDA({
   'Just {p} per month':'Kun {p} pr. måned',
   'Cancel anytime':'Opsig når som helst',
   'You have Premium':'Du har Premium',
+  'Free Premium':'Gratis Premium',
+  'Premium is free on your account – enjoy!':'Premium er gratis på din konto – god fornøjelse!',
   'Yearly plan':'Årsabonnement',
   'Monthly plan':'Månedsabonnement',
   'free trial until {d}':'gratis prøveperiode til {d}',

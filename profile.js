@@ -85,7 +85,7 @@ SCREENS.profile = app => {
       : acct.offline ? `<div class="card"><p class="small mut" style="margin:0">${ic('cloudoff','sm')} ${t('Offline – your data is saved on this phone and uploaded when you’re back online.')}</p></div>`
       : authEnabled() ? `<div class="card"><div class="banner"><span class="bi">${ic('cloudoff')}</span><div class="grow"><b>${t('Save to your account')}</b></div></div>${loginHTML(t('Your data is only on this phone. Create a free account to keep it safe and use LIFT on all your devices.'))}</div>` : ''}
 
-    <button class="lrow" onclick="openPremium('profile')"><span class="bi sm ${pr ? '' : 'gold'}">${ic('crown','sm')}</span><span class="grow"><b>${pr ? 'LIFT Premium' : t('Upgrade to Premium')}</b><span class="xs mut">${!pr ? t('Stats, barcode scanner, macros & vitamins') : p.premium.source==='stripe' ? t(p.premium.status==='trialing' ? 'Trial until {d}' : p.premium.cancel ? 'Ends {d}' : 'Renews {d}', {d:dkLong(p.premium.until)}) : t('Test mode')}</span></span>${ic('chevR','sm')}</button>
+    <button class="lrow" onclick="openPremium('profile')"><span class="bi sm ${pr ? '' : 'gold'}">${ic('crown','sm')}</span><span class="grow"><b>${pr ? 'LIFT Premium' : t('Upgrade to Premium')}</b><span class="xs mut">${!pr ? t('Stats, barcode scanner, macros & vitamins') : p.premium.source==='stripe' ? t(p.premium.status==='trialing' ? 'Trial until {d}' : p.premium.cancel ? 'Ends {d}' : 'Renews {d}', {d:dkLong(p.premium.until)}) : p.premium.source==='gift' ? t('Free Premium') : t('Test mode')}</span></span>${ic('chevR','sm')}</button>
     <button class="lrow" onclick="go('goals')"><span class="bi sm">${ic('target','sm')}</span><span class="grow"><b>${t('Goals & body')}</b><span class="xs mut">${goals().kcal} kcal · ${t('{n} g protein', {n:goals().p})} · ${t('{n} workouts/week', {n:p.weeklyGoal||3})}</span></span>${ic('chevR','sm')}</button>
 
     <div class="sect"><span>${t('Settings')}</span></div>
@@ -180,7 +180,7 @@ function loadDemo(){
 /* ---------- Premium ---------- */
 function openPremium(from){ premFrom = from || ''; track('premium-view'); if(from) track('premium-click-' + from); go('premium') }
 SCREENS.premium = app => {
-  const yes = ic('check'), no = '<span class="no">—</span>', active = S.profile.premium && S.profile.premium.source === 'stripe';
+  const yes = ic('check'), no = '<span class="no">—</span>', active = S.profile.premium && ['stripe','gift'].includes(S.profile.premium.source);
   app.innerHTML = `<div class="wrap">
     ${header(`<button class="iconbtn back" onclick="go(prevView || 'train')" aria-label="${t('Back')}">${ic('chevL')}</button><h1>Premium</h1>`, '')}
     ${active ? buyHTML() : ''}
@@ -209,6 +209,7 @@ function plansHTML(){
 }
 function buyHTML(){
   const p = S.profile.premium;
+  if(p && p.source === 'gift') return `<div class="card how"><h3>${ic('crown','sm')} ${t('You have Premium')}</h3><p class="small">${t('Premium is free on your account – enjoy!')}</p></div>`;
   if(p && p.source === 'stripe') return `<div class="card how"><h3>${ic('crown','sm')} ${t('You have Premium')}</h3>
     <p class="small">${p.plan==='year'?t('Yearly plan'):t('Monthly plan')} · ${t(p.status==='trialing' ? 'free trial until {d}' : p.cancel ? 'ends {d}' : 'renews {d}', {d:`<b>${dkLong(p.until)}</b>`})}</p>
     <button class="btn block" onclick="openPortal()" ${acct.busy?'disabled':''}>${t('Manage subscription')}</button></div>`;

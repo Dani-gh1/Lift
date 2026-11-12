@@ -415,8 +415,10 @@ async function refreshSub(){
 }
 function applyEntitlement(){
   const s = acct.sub, ok = s && ['active','trialing','past_due'].includes(s.status) && (!s.current_period_end || new Date(s.current_period_end) > new Date());
+  const gift = !!(acct.user && (CONFIG.giftPremium || []).includes(acct.user.uid));   // gratis Premium (data.js)
   if(ok) S.profile.premium = {source:'stripe', plan:s.plan, until:s.current_period_end, status:s.status, cancel:s.cancel_at_period_end};
-  else if(S.profile.premium && S.profile.premium.source === 'stripe') S.profile.premium = null;
+  else if(gift) S.profile.premium = {source:'gift'};
+  else if(S.profile.premium && ['stripe','gift'].includes(S.profile.premium.source)) S.profile.premium = null;
   lsSave(); render();
 }
 

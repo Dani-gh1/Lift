@@ -34,6 +34,8 @@ const CONFIG = {
   // De er offentlige og må gerne stå her. null = ingen konto (appen gemmer kun på telefonen).
   firebase: {apiKey:'AIzaSyAhQkaBKhV8fpopilyJ8dNpVsbxmpog_7s', authDomain:'lift-3e272.firebaseapp.com', projectId:'lift-3e272',
              storageBucket:'lift-3e272.firebasestorage.app', messagingSenderId:'254431801662', appId:'1:254431801662:web:76a1283841bde1cc9afc6f'},
+  // Gratis Premium til bestemte konti: bruger-id fra Firebase → Authentication → Users → "User UID"
+  giftPremium: [],
   // Region for udvidelsen "Run Payments with Stripe" (den du valgte ved installationen)
   firebaseFunctionsRegion: 'europe-west1',
   // Stripe Price ID'er (offentlige) – fra Stripe → Product catalog → LIFT Premium
