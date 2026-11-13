@@ -112,7 +112,7 @@ SCREENS.profile = app => {
   </div>`;
 };
 function askReset(){
-  modal(`<h2>${t('Delete all data?')}</h2><p class="mut">${acct.user ? t('All workouts, routines, food and settings are deleted from this device and from your account. This can’t be undone.') : t('All workouts, routines, food and settings are deleted from this device. This can’t be undone.')}</p>
+  modal(`<h2>${t('Delete all data?')}</h2><p class="mut">${acct.user ? t('All workouts, programs, food and settings are deleted from this device and from your account. This can’t be undone.') : t('All workouts, programs, food and settings are deleted from this device. This can’t be undone.')}</p>
     <div class="grid2"><button class="btn" onclick="closeModal()">${t('Keep')}</button><button class="btn danger" onclick="doReset()">${t('Delete')}</button></div>`);
 }
 async function doReset(){

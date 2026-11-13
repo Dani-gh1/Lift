@@ -67,24 +67,14 @@ SCREENS.train = app => {
       <button class="iconbtn flat" onclick="openCalendar()" aria-label="${t('Calendar')}">${ic('calendar')}</button>
       <button class="iconbtn flat" onclick="openStartSheet()" aria-label="${t('New workout')}">${ic('plus')}</button></div>
     <h1 class="bigtitle">${t('Log')}</h1>
-    <div class="pillrow"><button class="pillbtn" onclick="go('routines')">${ic('list','sm')} ${t('Routines')}</button><button class="pillbtn" onclick="openWeight()">${ic('scale','sm')} ${cur ? fmt(cur) + ' kg' : t('Body weight')}</button></div>
+    <div class="pillrow"><button class="pillbtn" onclick="go('programs')">${ic('list','sm')} ${t('Program')}</button><button class="pillbtn" onclick="openWeight()">${ic('scale','sm')} ${cur ? fmt(cur) + ' kg' : t('Body weight')}</button></div>
+    ${nextUpHTML()}
     ${S.current ? `<button class="card hl resume" onclick="resumeWorkout()"><span class="live"></span><span class="grow" style="min-width:0"><b>${t('Workout in progress')}</b><span class="xs mut ell">${esc(S.current.name)} · ${durText(Date.now()-S.current.start)}</span></span>${ic('chevR')}</button>` : ''}
     ${groups.length ? groups.map(g => `<div class="mhead"><span>${esc(g.title)}</span><span>${t(g.items.length === 1 ? '{n} workout' : '{n} workouts', {n:g.items.length})}</span></div>${g.items.map(logCard).join('')}`).join('')
       : `<div class="card center" style="padding:28px 18px;margin-top:18px"><div class="bigicon" style="margin:0 auto 12px">${ic('log')}</div><b>${t('No workouts yet')}</b>
          <p class="small mut">${t('Tap + to start your first workout. It takes 10 seconds.')}</p><button class="btn pri" onclick="startWorkout()">${ic('plus')} ${t('Start workout')}</button></div>`}
   </div>`;
 };
-function openStartSheet(){
-  if(S.current) return resumeWorkout();
-  modal(`<div class="row between"><h2 style="margin:0">${t('Start workout')}</h2>${closeBtn()}</div>
-    <button class="btn pri block" style="margin-top:12px" onclick="closeModal();startWorkout()">${ic('plus')} ${t('Empty workout')}</button>
-    ${S.routines.length ? `<div class="sect"><span>${t('My routines')}</span></div>${S.routines.map(r => routineRow(r, true)).join('')}` : ''}
-    <div class="sect"><span>${t('Templates')}</span><button class="link" onclick="go('routines')">${t('Manage routines')}</button></div>
-    ${TEMPLATES.map(templateRow).join('')}`);
-}
-const routineRow = (r, closeFirst) => `<div class="lrow"><button class="lmain" onclick="${closeFirst ? 'closeModal();' : ''}startWorkout('${r.id}')"><span class="playdot">${ic('play','sm')}</span><span class="grow" style="min-width:0"><b>${esc(r.name)}</b><span class="xs mut ell">${r.ex.map(e => esc(exInfo(e.id).n)).join(' · ')}</span></span></button><button class="iconbtn flat" onclick="routineMenu('${r.id}')" aria-label="${t('More')}">${ic('dots')}</button></div>`;
-const templateRow = x => `<button class="lrow" onclick="templateMenu('${x.id}')"><span class="grow" style="min-width:0"><b>${esc(t(x.name))}</b><span class="xs mut">${esc(t(x.tag))} · ${t('{n} exercises', {n:x.ex.length})}</span></span>${ic('chevR','sm')}</button>`;
-
 /* ---------- Kalender ---------- */
 let calM = null;
 function openCalendar(){ const n = new Date(); calM = calM || new Date(n.getFullYear(), n.getMonth(), 1).getTime(); renderCal() }
@@ -107,12 +97,11 @@ let lastPop = null, wMode = 'active', wEdit = null, wDirty = false, wBack = 'tra
 const cw = () => wMode === 'edit' ? wEdit : S.current;          // den træning, der vises lige nu
 function persistW(){ if(wMode === 'edit') wDirty = true; else lsSave() }
 const newSets = (id, n) => Array.from({length: n || (lastPerformance(id)?.sets.length) || 3}, () => ({kg:null, reps:null, done:false}));
-function startWorkout(routineId){
+function startWorkout(routineId){   // routineId = id på en programdag
   if(S.current){ resumeWorkout(); return }
-  const r = routineId && (S.routines.find(x => x.id === routineId) || TEMPLATES.find(x => x.id === routineId));
-  const ex = !r ? [] : (r.ex || []).map(e => Array.isArray(e) ? {id:e[0], sets:e[1], reps:e[2]} : e);
-  S.current = {id:newId(), start:Date.now(), end:null, name: r ? (TEMPLATES.includes(r) ? t(r.name) : r.name) : defaultName(), notes:'', bw:null, routineId: r ? r.id : null,
-    ex: ex.filter(e => EX[e.id] || S.customEx.find(c => c.id === e.id)).map(e => ({id:e.id, target:e.reps || null, sets:newSets(e.id, e.sets)}))};
+  const f = routineId ? findDay(routineId) : null, ex = f ? f.day.ex : [];   // en dag i et program (eller en skabelon)
+  S.current = {id:newId(), start:Date.now(), end:null, name: f ? (f.day.title || dayName(f.p, f.k)) : defaultName(), notes:'', bw:null, routineId: f ? f.day.id : null,
+    ex: ex.filter(e => EX[e.id] || S.customEx.find(c => c.id === e.id)).map(e => ({id:e.id, target:e.reps || null, tsets:e.sets || null, tkg:e.kg || null, sets:newSets(e.id, e.sets)}))};
   wMode = 'active'; wEdit = null; kp.open = false;
   lsSave(); track('workout-start'); go('workout');
   if(!S.current.ex.length) setTimeout(() => pickExercise(addExercise), 150);
@@ -141,12 +130,12 @@ function suggestion(id, target){
   if(lp.sets.every(s => s.reps >= target)){ const inc = x.inc || 2.5, top = Math.max(...lp.sets.map(s => s.kg)); return t('You hit every set last time – try {kg} kg', {kg:fmt(top + inc)}) }
   return '';
 }
-// Grå tekst i tomme felter: sidste gangs sæt, ellers sættet over, ellers rutinens mål
+// Grå tekst i tomme felter: sidste gangs sæt, ellers sættet over, ellers programmets plan
 function prevFor(w, i, j){
   const e = w.ex[i], lp = lastPerformance(e.id, w.id, w.start);
   if(lp) return lp.sets[j] || lp.sets[lp.sets.length-1];
   for(let k = j - 1; k >= 0; k--){ const s = e.sets[k]; if(s.reps != null) return s }
-  return e.target ? {kg:null, reps:e.target} : null;
+  return e.target ? {kg:e.tkg ?? null, reps:e.target} : null;
 }
 const cleanSet = s => Object.assign({kg:s.kg || 0, reps:s.reps || 0, done:true}, s.note ? {note:s.note} : {});
 
@@ -170,8 +159,9 @@ function setRow(w, i, j){
 }
 function exCard(w, i){
   const e = w.ex[i], x = exInfo(e.id), fav = (S.profile.favs || []).includes(e.id), sug = wMode === 'active' ? suggestion(e.id, e.target) : '';
+  const plan = e.target && wMode === 'active' ? `${e.tsets || e.sets.length} × ${e.target}${x.t === 's' ? ' ' + t('sec') : ''}${e.tkg ? ' · ' + fmt(e.tkg, 2) + ' kg' : ''}` : '';
   return `<section class="ex2">
-    <div class="exhead"><button class="exname" onclick="showExercise('${e.id}')"><b>${esc(x.n)}</b>${sug ? `<span class="xs neon">${esc(sug)}</span>` : ''}</button>
+    <div class="exhead"><button class="exname" onclick="showExercise('${e.id}')"><b>${esc(x.n)}</b>${plan ? `<span class="xs mut">${t('Plan')}: ${plan}</span>` : ''}${sug ? `<span class="xs neon">${esc(sug)}</span>` : ''}</button>
       <button class="iconbtn flat" onclick="exMenu(${i})" aria-label="${esc(t('Options for {n}', {n:x.n}))}">${ic('dots')}</button></div>
     ${e.sets.map((s, j) => setRow(w, i, j)).join('')}
     <div class="exfoot"><button class="link" onclick="addSet(${i})">${ic('plus','sm')} ${t('Add set')}</button><span class="grow"></span>
@@ -282,7 +272,7 @@ function discardWorkout(){
 function workoutMenu(){
   kpClose(); const ed = wMode === 'edit', w = cw();
   modal(`<div class="row between"><h2 style="margin:0">${esc(w.name)}</h2>${closeBtn()}</div>
-    ${w.ex.length ? `<button class="btn block" style="margin-top:12px" onclick="routineFromW()">${ic('list')} ${t('Save as routine')}</button>` : ''}
+    ${w.ex.length ? `<button class="btn block" style="margin-top:12px" onclick="saveAsProgram()">${ic('list')} ${t('Save as program')}</button>` : ''}
     ${ed ? '' : `<button class="btn block" style="margin-top:8px" onclick="openRestSheet()">${ic('timer')} ${t('Rest timer')}</button>`}
     <button class="btn block danger" style="margin-top:8px" onclick="${ed ? `confirmDelete('${w.id}')` : 'discardWorkout()'}">${ic('trash')} ${ed ? t('Delete workout') : t('Discard workout')}</button>`);
 }
@@ -381,7 +371,7 @@ function finishWorkout(force){
   upsert('workouts', w); S.workouts.sort((a, b) => a.start - b.start);
   const reached = typeof checkGoals === 'function' ? checkGoals().map(g => goalState(g).title) : [];
   const wk = thisWeek().length, wg = S.profile.weeklyGoal || 3;
-  S.summary = {id:w.id, prs, goals:reached, weekly: wk === wg ? wg : 0, ros:ROS[Math.floor(Math.random()*ROS.length)], fromRoutine:!!c.routineId && !!S.routines.find(r => r.id === c.routineId)};
+  S.summary = {id:w.id, prs, goals:reached, weekly: wk === wg ? wg : 0, ros:ROS[Math.floor(Math.random()*ROS.length)], fromRoutine:!!c.routineId && !!findDay(c.routineId)};
   S.current = null; stopRest(); lsSave();
   track('workout-complete'); if(S.workouts.length === 1) trackOnce('first-workout'); if(S.workouts.length === 10) trackOnce('ten-workouts');
   go('done');
@@ -405,7 +395,7 @@ SCREENS.done = app => {
     ${s.weekly ? `<div class="card"><div class="banner"><span class="bi">${ic('flame')}</span><div class="grow"><b>${t('Weekly goal reached')}</b><p class="small mut" style="margin:2px 0 0">${t('{n} of {n} workouts this week. Streak: {s} weeks.', {n:s.weekly, s:weekStreak()})}</p></div></div></div>` : ''}
     ${s.prs.length ? `<h3 style="margin-top:18px">${t('New records')} 🏆</h3>${s.prs.map(r => `<div class="pr">${ic('trophy')}<span class="grow"><b>${esc(r.n)}</b><br><span class="xs mut">${t('before: {v}', {v:esc(r.before)})}</span></span><b>${esc(r.now)}</b></div>`).join('')}` : ''}
     <div class="card"><h3>${t('Your workout')}</h3>${w.ex.map(e => { const x = exInfo(e.id); return `<div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span class="small">${esc(x.n)}</span><span class="small mut">${e.sets.map(st => setShort(x, st)).join(', ')}</span></div>` }).join('')}</div>
-    ${s.fromRoutine ? '' : `<button class="btn block" onclick="saveAsRoutine('${w.id}')">${ic('list')} ${t('Save as routine')}</button>`}
+    ${s.fromRoutine ? '' : `<button class="btn block" onclick="saveAsProgram('${w.id}')">${ic('list')} ${t('Save as program')}</button>`}
     <button class="btn pri block" style="margin-top:10px" onclick="S.summary=null;lsSave();go(prevView || 'train')">${t('Done')}</button>
   </div>`;
 };
@@ -417,68 +407,6 @@ function deleteWorkout(id){
   removeItem('workouts', id); closeModal(); toast(t('Workout deleted'));
   if(wMode === 'edit' && wEdit && wEdit.id === id){ wDirty = false; leaveEdit() } else render();
 }
-
-/* ---------- Rutiner ---------- */
-let draft = null, routineBack = 'routines';
-SCREENS.routines = app => {
-  app.innerHTML = `<div class="wrap">
-    ${header(`<button class="iconbtn back" onclick="go('train')" aria-label="${t('Back')}">${ic('chevL')}</button><h1>${t('Routines')}</h1>`, `<button class="btn sm" onclick="editRoutine()">${ic('plus','sm')} ${t('New')}</button>`)}
-    ${S.routines.length ? S.routines.map(r => routineRow(r)).join('') : `<p class="small mut">${t('Routines are workouts you repeat. Make your own, or start from a template.')}</p>`}
-    <div class="sect"><span>${t('Templates')}</span></div>
-    ${TEMPLATES.map(templateRow).join('')}
-  </div>`;
-};
-function editRoutine(id){
-  const r = id && S.routines.find(x => x.id === id);
-  routineBack = view === 'workout' ? 'workout' : 'routines';
-  draft = r ? JSON.parse(JSON.stringify(r)) : {id:newId(), name:'', ex:[]};
-  go('routine');
-}
-function saveAsRoutine(fromWorkoutId){
-  const w = S.workouts.find(x => x.id === fromWorkoutId);
-  draft = {id:newId(), name: w.name, ex: w.ex.map(e => ({id:e.id, sets:e.sets.length, reps:e.sets[0]?.reps || 10}))};
-  routineBack = 'routines'; go('routine');
-}
-function routineFromW(){
-  const w = cw();
-  draft = {id:newId(), name: w.name, ex: w.ex.map(e => ({id:e.id, sets:Math.max(1, e.sets.length), reps:(e.sets.find(s => s.reps != null) || {}).reps || e.target || 10}))};
-  routineBack = 'workout'; go('routine');
-}
-SCREENS.routine = app => {
-  if(!draft){ view = 'routines'; return render() }
-  app.innerHTML = `<div class="wrap">
-    ${header(`<button class="iconbtn back" onclick="draft=null;go(routineBack)" aria-label="${t('Cancel')}">${ic('x')}</button><h1>${S.routines.find(r => r.id === draft.id) ? t('Edit routine') : t('New routine')}</h1>`, `<button class="btn sm pri" onclick="saveRoutine()">${t('Save')}</button>`)}
-    <label class="small mut" for="rName">${t('Name')}</label>
-    <input id="rName" class="txt" placeholder="${t('e.g. Upper body')}" value="${esc(draft.name)}" oninput="draft.name=this.value" style="margin:6px 0 12px">
-    ${draft.ex.map((e, i) => { const x = exInfo(e.id); return `<div class="card row" style="gap:8px"><div class="grow" style="min-width:0"><b>${esc(x.n)}</b><div class="xs mut">${esc(mus(x.m))}</div></div>
-      <label class="mini"><input class="num sm" inputmode="numeric" value="${e.sets}" onchange="draft.ex[${i}].sets=Math.max(1,parseInt(this.value)||1)" aria-label="${t('Sets')}"><small>${t('sets')}</small></label>
-      <label class="mini"><input class="num sm" inputmode="numeric" value="${e.reps}" onchange="draft.ex[${i}].reps=Math.max(1,parseInt(this.value)||1)" aria-label="${unitOf(x)}"><small>${unitOf(x)}</small></label>
-      <button class="iconbtn flat" onclick="draft.ex.splice(${i},1);render()" aria-label="${t('Remove')}">${ic('x')}</button></div>` }).join('')}
-    <button class="card addex" onclick="pickExercise(id=>{draft.ex.push({id,sets:3,reps:exInfo(id).t==='s'?30:10});closeModal();render()})">${ic('plus')} ${t('Add exercise')}</button>
-  </div>`;
-};
-function saveRoutine(){
-  draft.name = (draft.name || '').trim();
-  if(!draft.name) return toast(t('Give your routine a name'));
-  if(!draft.ex.length) return toast(t('Add at least one exercise'));
-  upsert('routines', draft); draft = null; toast(t('Routine saved')); track('routine-saved'); go(routineBack);
-}
-function routineMenu(id){
-  const r = S.routines.find(x => x.id === id);
-  modal(`<div class="row between"><h2 style="margin:0">${esc(r.name)}</h2>${closeBtn()}</div>
-    <p class="small mut">${r.ex.map(e => `${esc(exInfo(e.id).n)} – ${e.sets}×${e.reps}`).join('<br>')}</p>
-    <button class="btn pri block" onclick="closeModal();startWorkout('${id}')">${ic('play')} ${t('Start')}</button>
-    <button class="btn block" style="margin-top:8px" onclick="closeModal();editRoutine('${id}')">${ic('edit')} ${t('Edit')}</button>
-    <button class="btn block danger" style="margin-top:8px" onclick="removeItem('routines','${id}');closeModal();render();toast(t('Routine deleted'))">${ic('trash')} ${t('Delete')}</button>`);
-}
-function templateMenu(id){
-  const x = TEMPLATES.find(z => z.id === id);
-  modal(`<div class="row between"><div><span class="xs neon">${esc(t(x.tag))}</span><h2 style="margin:0">${esc(t(x.name))}</h2></div>${closeBtn()}</div>
-    ${x.ex.map(([eid, s, r]) => `<button class="row between link" style="width:100%;color:var(--txt);border-top:1px solid var(--line)" onclick="showExercise('${eid}')"><span>${esc(exInfo(eid).n)}</span><span class="mut small">${s} × ${r} ${exInfo(eid).t === 's' ? t('sec') : ''}</span></button>`).join('')}
-    <button class="btn pri block" style="margin-top:12px" onclick="closeModal();startWorkout('${id}')">${ic('play')} ${t('Start now')}</button>
-    <button class="btn block" style="margin-top:8px" onclick="copyTemplate('${id}')">${ic('copy')} ${t('Add to my routines')}</button>`);
-}
-function copyTemplate(id){ const x = TEMPLATES.find(z => z.id === id); upsert('routines', {id:newId(), name:t(x.name), ex:x.ex.map(([eid, s, r]) => ({id:eid, sets:s, reps:r}))}); closeModal(); render(); toast(t('Added to your routines')) }
 
 /* ---------- Kropsvægt ---------- */
 const weights = () => S.body.slice().sort((a, b) => a.d - b.d);
@@ -576,10 +504,10 @@ function saveCustomExercise(){
   if(pickCb) pickCb(x.id); else closeModal();
 }
 function customExMenu(id){
-  const x = exInfo(id), used = S.workouts.some(w => w.ex.some(e => e.id === id)) || S.routines.some(r => r.ex.some(e => e.id === id));
+  const x = exInfo(id), used = S.workouts.some(w => w.ex.some(e => e.id === id)) || S.programs.some(p => p.days.some(d => d.ex.some(e => e.id === id)));
   modal(`<div class="row between"><h2 style="margin:0">${esc(x.n)}</h2>${closeBtn()}</div>
     <button class="btn pri block" style="margin-top:12px" onclick="pickCb('${id}')">${ic('plus')} ${t('Add to workout')}</button>
-    ${used ? `<p class="xs mut" style="margin-top:10px">${t('This exercise is in your log or routines, so it can’t be deleted.')}</p>`
+    ${used ? `<p class="xs mut" style="margin-top:10px">${t('This exercise is in your log or programs, so it can’t be deleted.')}</p>`
       : `<button class="btn block danger" style="margin-top:8px" onclick="removeItem('customEx','${id}');renderPicker()">${ic('trash')} ${t('Delete exercise')}</button>`}
     <button class="btn block" style="margin-top:8px" onclick="renderPicker()">${t('Back')}</button>`);
 }

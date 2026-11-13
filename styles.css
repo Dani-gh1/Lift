@@ -462,3 +462,23 @@ body.kp-on .restbar{bottom:calc(310px + var(--bot)) !important}
 .hrow{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .hrow .small:last-child{text-align:right}
 textarea.txt.area{min-height:120px;padding:12px;resize:vertical;font:500 16px Inter;line-height:1.4}
+
+/* ---------- Programmer ---------- */
+.hdr h1.sm{font-size:23px}
+.stack{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.daynum{width:30px;height:30px;border-radius:50%;background:var(--neonDim);color:var(--neon);display:flex;align-items:center;justify-content:center;font:800 14px Inter;flex:none}
+.pill.sm{padding:2px 8px;font-size:11px;vertical-align:2px;margin-left:4px}
+.card.prog.on{box-shadow:0 0 0 1.5px var(--neon) inset}
+.card.prog .lrow{background:var(--bg2);min-height:56px;margin:6px 0}
+.card.nextup{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;color:var(--txt);font:inherit;cursor:pointer;margin-top:12px}
+.card.nextup b{font-size:17px;margin:1px 0}
+.card.pday{padding:14px}
+.card.pday > .row .txt{min-width:0;height:44px}
+.pex{border-top:1px solid var(--line);padding:10px 0 4px;margin-top:10px}
+.pex b{font-size:15px}
+.pexin{display:flex;align-items:flex-end;gap:8px;margin-top:6px}
+.pexin label{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.pexin small{font-size:11px;color:var(--mut)}
+.pexin input.num{height:44px;font-size:16px}
+.pexin > span{padding-bottom:12px}
+.tday{border-top:1px solid var(--line);padding:10px 0;margin-top:6px}

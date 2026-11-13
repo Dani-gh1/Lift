@@ -107,16 +107,23 @@ const EX = {
   kb_goblet:{n:'Kettlebell goblet squat',m:'Legs',t:'w',inc:4,needs:['kettlebell'],a:'squat',cue:['Hold the bell at your chest','Sit down deep','Stand up tall']},
 };
 
-// Færdige rutiner (skabeloner). Brugeren kan gemme sine egne i appen.
+// Færdige træningsdage (skabeloner). day = dagens navn, når den indgår i et program.
 const TEMPLATES = [
-  {id:'t_home_a', name:'Home – Full body A', tag:'Beginner · No equipment', ex:[['squat_bw',3,12],['pushup',3,8],['table_row',3,8],['glute_bridge',3,15],['plank',2,30]]},
-  {id:'t_home_b', name:'Home – Full body B', tag:'Beginner · No equipment', ex:[['lunge',3,10],['pike_pushup',3,6],['glute_bridge',3,15],['table_row',3,8],['crunch',3,15]]},
-  {id:'t_gym_a', name:'Gym – Full body A', tag:'Beginner · Gym', ex:[['legpress',3,10],['db_bench',3,10],['latpull',3,10],['plank',2,30]]},
-  {id:'t_gym_b', name:'Gym – Full body B', tag:'Beginner · Gym', ex:[['goblet',3,10],['db_ohp',3,10],['cable_row',3,10],['db_rdl',3,10]]},
-  {id:'t_push', name:'Push', tag:'Intermediate · Gym', ex:[['bench',4,6],['incline_db',3,10],['ohp',3,8],['lat_raise',3,12],['triceps_push',3,12]]},
-  {id:'t_pull', name:'Pull', tag:'Intermediate · Gym', ex:[['deadlift',3,5],['pullup',3,8],['row_bb',3,8],['face_pull',3,15],['db_curl',3,12]]},
-  {id:'t_legs', name:'Legs', tag:'Intermediate · Gym', ex:[['squat_bb',4,6],['rdl',3,8],['legpress',3,12],['leg_curl',3,12],['calf_raise',3,15]]},
-  {id:'t_db', name:'Dumbbells only', tag:'Any level · Dumbbells', ex:[['goblet',3,10],['db_bench',3,10],['db_row',3,10],['db_ohp',3,10],['db_curl',3,12]]},
+  {id:'t_home_a', day:'Full body A', name:'Home – Full body A', tag:'Beginner · No equipment', ex:[['squat_bw',3,12],['pushup',3,8],['table_row',3,8],['glute_bridge',3,15],['plank',2,30]]},
+  {id:'t_home_b', day:'Full body B', name:'Home – Full body B', tag:'Beginner · No equipment', ex:[['lunge',3,10],['pike_pushup',3,6],['glute_bridge',3,15],['table_row',3,8],['crunch',3,15]]},
+  {id:'t_gym_a', day:'Full body A', name:'Gym – Full body A', tag:'Beginner · Gym', ex:[['legpress',3,10],['db_bench',3,10],['latpull',3,10],['plank',2,30]]},
+  {id:'t_gym_b', day:'Full body B', name:'Gym – Full body B', tag:'Beginner · Gym', ex:[['goblet',3,10],['db_ohp',3,10],['cable_row',3,10],['db_rdl',3,10]]},
+  {id:'t_push', day:'Push', name:'Push', tag:'Intermediate · Gym', ex:[['bench',4,6],['incline_db',3,10],['ohp',3,8],['lat_raise',3,12],['triceps_push',3,12]]},
+  {id:'t_pull', day:'Pull', name:'Pull', tag:'Intermediate · Gym', ex:[['deadlift',3,5],['pullup',3,8],['row_bb',3,8],['face_pull',3,15],['db_curl',3,12]]},
+  {id:'t_legs', day:'Legs', name:'Legs', tag:'Intermediate · Gym', ex:[['squat_bb',4,6],['rdl',3,8],['legpress',3,12],['leg_curl',3,12],['calf_raise',3,15]]},
+  {id:'t_db', day:'Full body', name:'Dumbbells only', tag:'Any level · Dumbbells', ex:[['goblet',3,10],['db_bench',3,10],['db_row',3,10],['db_ohp',3,10],['db_curl',3,12]]},
+];
+// Færdige programmer (flere dage), som man kan bruge som sit eget program
+const PROGRAM_TEMPLATES = [
+  {id:'pt_home', name:'Home – Full body', tag:'Beginner · No equipment', days:['t_home_a','t_home_b']},
+  {id:'pt_gym', name:'Gym – Full body', tag:'Beginner · Gym', days:['t_gym_a','t_gym_b']},
+  {id:'pt_ppl', name:'Push / Pull / Legs', tag:'Intermediate · Gym', days:['t_push','t_pull','t_legs']},
+  {id:'pt_db', name:'Dumbbells only', tag:'Any level · Dumbbells', days:['t_db']},
 ];
 
 // Næringsstoffer. ff = nøgle i Open Food Facts, x = omregning fra deres enhed (gram) til vores enhed.

@@ -69,12 +69,12 @@ const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none
    Alt gemmes først på telefonen (virker offline). Er man logget ind, synkroniseres det med kontoen.
    Lister (træninger, mad …) har id + u (sidst ændret), så ændringer fra flere enheder kan flettes. */
 const KEY = 'lift_v3';
-const COLLS = ['workouts','routines','customEx','food','customFoods','body','goals'];
-const SYNC_PROFILE = ['lang','favs','onboarded','offerSeen','goal','sex','age','height','weight','activity','kcalGoal','proteinGoal','weeklyGoal','restDefault','sound','unit'];
-const blankProfile = () => ({lang:null, favs:[], onboarded:false, offerSeen:false, goal:'muscle', sex:null, age:null, height:null, weight:null, activity:1.55,
+const COLLS = ['workouts','programs','routines','customEx','food','customFoods','body','goals'];   // routines = gammel udgave af programs
+const SYNC_PROFILE = ['lang','favs','activeProgram','onboarded','offerSeen','goal','sex','age','height','weight','activity','kcalGoal','proteinGoal','weeklyGoal','restDefault','sound','unit'];
+const blankProfile = () => ({lang:null, favs:[], activeProgram:null, onboarded:false, offerSeen:false, goal:'muscle', sex:null, age:null, height:null, weight:null, activity:1.55,
   kcalGoal:null, proteinGoal:null, weeklyGoal:3, restDefault:90, sound:true, pu:0,
   premium:null, lastBackup:null, interest:null, waitlist:null, flags:{}});
-const blank = () => ({profile:blankProfile(), workouts:[], routines:[], customEx:[], food:[], customFoods:[], body:[], goals:[], del:{}, dirty:{}, sync:{uid:null, pulled:0, profPushed:0}, current:null, summary:null});
+const blank = () => ({profile:blankProfile(), workouts:[], programs:[], routines:[], customEx:[], food:[], customFoods:[], body:[], goals:[], del:{}, dirty:{}, sync:{uid:null, pulled:0, profPushed:0}, current:null, summary:null});
 let S = blank();
 
 function load(){
@@ -354,7 +354,7 @@ function mergeRemote(r){
     S[k] = [...map.values()].filter(x => !(S.del[x.id] && S.del[x.id] >= (x.u||0)));
   });
   if(r.profile && (r.profile.pu||0) > (S.profile.pu||0)){ SYNC_PROFILE.forEach(k => { if(k in r.profile) S.profile[k] = r.profile[k] }); S.profile.pu = r.profile.pu; changed = true }
-  S.workouts.sort((a,b) => a.start - b.start);
+  S.workouts.sort((a,b) => a.start - b.start); migrateRoutines();
   return changed;
 }
 function syncPayload(){ const out = {v:4, profile:syncProfile(), del:S.del}; COLLS.forEach(k => out[k] = S[k]); return out }
@@ -372,7 +372,7 @@ async function syncNow(first){
     const pd = await F.getDoc(F.doc(db, 'users', uid));
     const rp = pd.exists() ? pd.data().profile : null;
     if(rp && (rp.pu||0) > (S.profile.pu||0)){ SYNC_PROFILE.forEach(k => { if(k in rp) S.profile[k] = rp[k] }); S.profile.pu = rp.pu; S.sync.profPushed = rp.pu; changed = true }
-    if(changed) S.workouts.sort((a,b) => a.start - b.start);
+    if(changed){ S.workouts.sort((a,b) => a.start - b.start); migrateRoutines() }
     // 2) Send egne ændringer op (højst 400 pr. omgang)
     const pending = Object.entries(S.dirty), sent = {};
     for(let i = 0; i < pending.length; i += 400){
@@ -468,10 +468,10 @@ let view = 'train';
 const TABS = [['train','Train','dumbbell'],['stats','Stats','chart'],['food','Food','apple'],['goals','Goals','target'],['profile','Profile','user']];
 const SCREENS = {};   // udfyldes af train.js, food.js, stats.js, profile.js
 let prevView = 'train';
-function go(v){ if(v !== 'train') $('#installBox')?.remove(); if(v !== view && !['premium','done','routine','workout','routines'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
+function go(v){ if(v !== 'train') $('#installBox')?.remove(); if(v !== view && !['premium','done','program','workout','programs'].includes(view)) prevView = view; view = v; closeModal(); window.scrollTo(0,0); render() }
 function render(){
   const gate = appGate();
-  const full = gate || ['workout','done','premium','routine','routines'].includes(view);
+  const full = gate || ['workout','done','premium','program','programs'].includes(view);
   $('#tabs').style.display = full ? 'none' : '';
   $('#tabs').setAttribute('aria-label', t('Main menu'));
   $('#tabs .in').innerHTML = TABS.map(([k,l,i]) => `<button class="${view===k?'on':''}" onclick="go('${k}')" aria-label="${t(l)}" ${view===k?'aria-current="page"':''}>${ic(i)}${t(l)}</button>`).join('');
@@ -588,6 +588,7 @@ let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT =
 function start(){
   load();
   LANG = S.profile.lang || detectLang(); document.documentElement.lang = LANG;
+  migrateRoutines();
   if(S.summary) view = 'done'; else if(S.current) view = 'workout';
   render();
   initAccount();
