@@ -43,7 +43,7 @@ function openStartSheet(){
     ${p ? programStartHTML(p) + empty('') + `<button class="link block" style="margin-top:6px" onclick="go('programs')">${t('Programs and templates')}</button>`
       : empty('pri') + `<div class="card how" style="margin-top:12px"><b>${t('Write your program')}</b>
       <p class="small mut" style="margin:4px 0 10px">${t('Then your exercises and sets are ready when you train – you only type weight and reps.')}</p>
-      <button class="btn block" onclick="editProgram()">${ic('plus')} ${t('Create your program')}</button></div>
+      <div class="grid2"><button class="btn" onclick="editProgram()">${ic('plus')} ${t('Create your program')}</button><button class="btn" onclick="importSheet()">${ic('file','sm')} ${t('Paste as text')}</button></div></div>
       <div class="sect"><span>${t('Templates')}</span></div>${templatePrograms().map(tplRow).join('')}`}`);
 }
 function programStartHTML(p){
@@ -75,7 +75,9 @@ SCREENS.programs = app => {
     ${S.programs.length ? S.programs.map(p => programCard(p, p === act)).join('')
       : `<div class="card center" style="padding:22px 18px"><div class="bigicon" style="margin:0 auto 12px">${ic('list')}</div><b>${t('Write your program')}</b>
         <p class="small mut">${t('Write your program once. When you start a workout, your exercises and sets are ready – you only type weight and reps.')}</p>
-        <button class="btn pri" onclick="editProgram()">${ic('plus')} ${t('Create your program')}</button></div>`}
+        <button class="btn pri" onclick="editProgram()">${ic('plus')} ${t('Create your program')}</button>
+        <button class="link block" style="margin-top:6px" onclick="importSheet()">${ic('file','sm')} ${t('Paste as text')}</button></div>`}
+    ${S.programs.length ? `<button class="btn block" style="margin-top:4px" onclick="importSheet()">${ic('file','sm')} ${t('Paste a program as text')}</button>` : ''}
     <div class="sect"><span>${t('Templates')}</span></div>
     ${templatePrograms().map(tplRow).join('')}
   </div>`;
@@ -208,3 +210,69 @@ function saveAsProgram(fromWorkoutId){
 }
 function newProgramFromDay(){ pDraft = {id:newId(), name:'', days:[pendingDay]}; go('program') }
 function addDayToProgram(){ const p = JSON.parse(JSON.stringify(activeProgram())); p.days.push(pendingDay); pDraft = p; go('program') }
+
+/* ---------- Sæt et program ind som tekst ---------- */
+// Danske og almindelige navne → øvelser i appen
+const EX_ALIAS = {
+  'bænkpres':'bench','bænk':'bench','bench':'bench','brystpres':'bench','håndvægt bænkpres':'db_bench','dumbbell bench':'db_bench','skrå bænkpres':'incline_db','incline':'incline_db','incline bench':'incline_db',
+  'flyes':'chest_fly','flys':'chest_fly','cable fly':'chest_fly','armbøjninger':'pushup','armstrækninger':'pushup','push ups':'pushup','pushups':'pushup','dips':'dips',
+  'dødløft':'deadlift','deadlift':'deadlift','roning':'row_bb','barbell row':'row_bb','bent over row':'row_bb','håndvægt roning':'db_row','dumbbell row':'db_row',
+  'lat pulldown':'latpull','lat træk':'latpull','lattræk':'latpull','pulldown':'latpull','kabel roning':'cable_row','seated row':'cable_row','pull ups':'pullup','pullups':'pullup','chins':'pullup','chin ups':'pullup','face pull':'face_pull','face pulls':'face_pull',
+  'squat':'squat_bb','squats':'squat_bb','back squat':'squat_bb','knæbøj':'squat_bb','goblet squat':'goblet','benpres':'legpress','leg press':'legpress','lunges':'lunge','udfald':'lunge',
+  'leg extension':'leg_ext','lårekstension':'leg_ext','leg curl':'leg_curl','lårcurl':'leg_curl','hamstring curl':'leg_curl','læg':'calf_raise','lægløft':'calf_raise','calf raise':'calf_raise','calf raises':'calf_raise',
+  'rumænsk dødløft':'rdl','rdl':'rdl','romanian deadlift':'rdl','hip thrust':'hip_thrust','hip thrusts':'hip_thrust','glute bridge':'glute_bridge','kettlebell swing':'kb_swing','swings':'kb_swing',
+  'skulderpres':'ohp','militærpres':'ohp','overhead press':'ohp','ohp':'ohp','håndvægt skulderpres':'db_ohp','shoulder press':'db_ohp','sidehæv':'lat_raise','lateral raise':'lat_raise','lateral raises':'lat_raise',
+  'biceps curl':'db_curl','bicepscurl':'db_curl','curls':'db_curl','curl':'db_curl','stang curl':'bb_curl','barbell curl':'bb_curl','hammer curl':'hammer_curl','hammercurl':'hammer_curl',
+  'triceps':'triceps_push','triceps pushdown':'triceps_push','pushdown':'triceps_push','skull crusher':'skull_crusher','skullcrushers':'skull_crusher',
+  'planke':'plank','plank':'plank','mavebøjninger':'crunch','crunches':'crunch','crunch':'crunch','benløft':'leg_raise','hanging leg raise':'leg_raise','russian twist':'russian_twist','burpees':'burpee',
+};
+const normName = s => s.toLowerCase().replace(/[-_]/g, ' ').replace(/[^a-z0-9æøåé ]/g, '').replace(/\s+/g, ' ').trim();
+function matchExercise(name){
+  const n = normName(name), list = allExercises();
+  if(EX_ALIAS[n] && EX[EX_ALIAS[n]]) return EX_ALIAS[n];
+  const exact = list.find(x => normName(x.n) === n); if(exact) return exact.id;
+  const alias = Object.keys(EX_ALIAS).sort((a, b) => b.length - a.length).find(a => (' ' + n + ' ').includes(' ' + a + ' ') && a.split(' ').length >= n.split(' ').length - 1);   // "Bulgarian split squat" er ikke "Squat"
+  if(alias) return EX_ALIAS[alias];
+  const words = n.split(' ').filter(w => w.length > 2); let best = null, score = 0;
+  list.forEach(x => { const xw = normName(x.n).split(' '); const hit = words.filter(w => xw.some(v => v.startsWith(w) || w.startsWith(v))).length / Math.max(words.length, xw.length); if(hit > score){ score = hit; best = x.id } });
+  return score >= 0.5 ? best : null;
+}
+// "Bænkpres 4x8 60kg", "Squat 5 x 5 @ 100", "Pull-ups 3 sæt á 10" … Linjer uden tal er dagenes navne.
+function parseProgram(text){
+  const p = {id:newId(), name:'', days:[]}, created = [];
+  let day = null, headers = 0;
+  text.split(/\r?\n/).forEach(raw => {
+    let l = raw.replace(/^\s*([-*•·]|\d+[.)])\s+/, '').trim(); if(!l) return;
+    const sr = l.match(/(\d+)\s*(?:[x×*]|sæt\s*(?:[aáà]|af|med|x)?|sets?\s*(?:of|x)?)\s*(\d+)/i);
+    if(!sr){ l = l.replace(/[:\-–]+$/, '').trim(); if(!l || l.length > 50) return;
+      if(!p.days.length && !day && headers === 0 && !p.name){ p.name = l; headers++; return }
+      day = {id:newId(), name:l, ex:[]}; p.days.push(day); headers++; return }
+    const kgm = l.match(/(\d+(?:[.,]\d+)?)\s*kg/i) || l.match(/@\s*(\d+(?:[.,]\d+)?)/);
+    const name = l.replace(sr[0], ' ').replace(kgm ? kgm[0] : '', ' ').replace(/\b(reps?|gentagelser|sek|sec|s)\b/gi, ' ').replace(/[,:;@–-]+\s*$/,'').replace(/\s+/g, ' ').trim().replace(/[,:;–-]+$/, '').trim();
+    if(!name) return;
+    let id = matchExercise(name);
+    if(!id){ const c = S.customEx.find(x => normName(x.n) === normName(name)) || created.find(x => normName(x.n) === normName(name));
+      if(c) id = c.id; else { const x = {id:'c_' + newId(), n:name.charAt(0).toUpperCase() + name.slice(1), m:'Full body', t:'w'}; created.push(x); id = x.id } }
+    if(!day){ day = {id:newId(), name:'', ex:[]}; p.days.push(day) }
+    const e = {id, sets:Math.min(20, Math.max(1, +sr[1])), reps:Math.max(1, +sr[2])}; if(kgm) e.kg = num(kgm[1]);
+    day.ex.push(e);
+  });
+  // stod der kun én overskrift, er den dagens navn og ikke programmets
+  if(p.name && p.days.length && p.days.every(d => !d.name) ){ p.days[0].name = p.name; if(p.days.length === 1) p.name = '' }
+  p.days = p.days.filter(d => d.ex.length);
+  return {p, created};
+}
+function importSheet(){
+  modal(`<div class="row between"><h2 style="margin:0">${t('Paste your program')}</h2>${closeBtn()}</div>
+    <p class="small mut">${t('Write or paste your program as text. One exercise per line, a line without numbers starts a new day.')}</p>
+    <textarea id="impTxt" class="txt imp" rows="11" placeholder="${esc(t('Push\nBench press 4x8 60kg\nShoulder press 3x10\n\nPull\nPull-ups 3x8\nRow 3x10'))}"></textarea>
+    <button class="btn pri block" style="margin-top:12px" onclick="doImport()">${ic('list')} ${t('Set up program')}</button>`);
+  setTimeout(() => $('#impTxt')?.focus(), 60);
+}
+function doImport(){
+  const {p, created} = parseProgram($('#impTxt').value || '');
+  if(!p.days.length) return toast(t('I could not find any exercises. Write them like: Bench press 4x8'));
+  created.forEach(x => upsert('customEx', x));
+  pBack = view === 'train' ? 'train' : 'programs'; pDraft = p; go('program');
+  toast(created.length ? t('Check the program and tap Save. {n} new exercises were created.', {n:created.length}) : t('Check the program and tap Save.'));
+}
