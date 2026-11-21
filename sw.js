@@ -1,6 +1,6 @@
 // LIFT service worker – virker offline
-const CACHE = 'lift-v20';
-const ASSETS = ['./', './index.html', './index.html?app', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.svg', './terms.html', './privacy.html', './legal.css', './styles.css?v=20', './data.js?v=20', './i18n.js?v=20', './da.js?v=20', './core.js?v=20', './train.js?v=20', './program.js?v=20', './food.js?v=20', './stats.js?v=20', './goals.js?v=20', './profile.js?v=20'];
+const CACHE = 'lift-v21';
+const ASSETS = ['./', './index.html', './index.html?app', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.svg', './terms.html', './privacy.html', './legal.css', './styles.css?v=21', './data.js?v=21', './i18n.js?v=21', './da.js?v=21', './core.js?v=21', './train.js?v=21', './program.js?v=21', './food.js?v=21', './stats.js?v=21', './goals.js?v=21', './profile.js?v=21'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())) });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())) });
 self.addEventListener('fetch', e => {
