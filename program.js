@@ -140,9 +140,9 @@ function exPlanHTML(e, k, i){
   const x = exInfo(e.id), sl = setList(e), w = x.t === 'w', unit = x.t === 's' ? t('sec') : t('reps');
   return `<div class="pex">
     <div class="row between" style="align-items:flex-start"><b>${esc(x.n)}</b><button class="iconbtn flat sm" onclick="exPlanMenu(${k},${i})" aria-label="${esc(t('Options for {n}', {n:x.n}))}">${ic('dots')}</button></div>
-    ${sl.map((st, j) => `<div class="psrow"><span class="psno">${t('Set {n}', {n:j + 1})}</span>
-      <input class="num" inputmode="text" value="${esc(st.rr || st.reps || '')}" placeholder="–" onchange="setPlanVal(${k},${i},${j},'reps',this)" aria-label="${esc(t('Set {n}', {n:j + 1}))} ${unit}"><small>${unit}</small>
-      ${w ? `<input class="num" inputmode="decimal" value="${st.kg != null ? fmt(st.kg, 2) : ''}" placeholder="–" onchange="setPlanVal(${k},${i},${j},'kg',this)" aria-label="${esc(t('Set {n}', {n:j + 1}))} kg"><small>kg</small>` : ''}
+    ${sl.map((st, j) => `<div class="psrow"><span class="scirc">${j + 1}</span>
+      ${w ? `<label class="pf"><small>${t('Weight')}</small><input inputmode="decimal" value="${st.kg != null ? fmt(st.kg, 2) : ''}" placeholder="–" onchange="setPlanVal(${k},${i},${j},'kg',this)" aria-label="${esc(t('Set {n}', {n:j + 1}))} kg"></label>` : ''}
+      <label class="pf"><small>${x.t === 's' ? t('Time') : t('Reps')}</small><input inputmode="text" value="${esc(st.rr || st.reps || '')}" placeholder="–" onchange="setPlanVal(${k},${i},${j},'reps',this)" aria-label="${esc(t('Set {n}', {n:j + 1}))} ${unit}"></label>
       <button class="iconbtn flat sm" onclick="delPlanSet(${k},${i},${j})" aria-label="${t('Delete set')}" ${sl.length < 2 ? 'disabled' : ''}>${ic('x')}</button></div>`).join('')}
     <button class="link" onclick="addPlanSet(${k},${i})">${ic('plus','sm')} ${t('Add set')}</button>
   </div>`;
