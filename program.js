@@ -141,10 +141,13 @@ function exPlanHTML(e, k, i){
     <div class="pexin">
       <label><small>${t('Sets')}</small><input class="num" inputmode="numeric" value="${e.sets}" onchange="${on}.sets=Math.min(20,Math.max(1,parseInt(this.value)||1));this.value=${on}.sets"></label>
       <span class="mut">×</span>
-      <label><small>${x.t === 's' ? t('Seconds') : t('Reps')}</small><input class="num" inputmode="numeric" value="${e.reps}" onchange="${on}.reps=Math.max(1,parseInt(this.value)||1);this.value=${on}.reps"></label>
+      <label><small>${x.t === 's' ? t('Seconds') : t('Reps')}</small><input class="num" inputmode="text" value="${esc(e.rr || e.reps)}" onchange="setPlanReps(${k},${i},this)"></label>
       ${x.t === 'w' ? `<label><small>${t('kg (optional)')}</small><input class="num" inputmode="decimal" placeholder="–" value="${e.kg != null ? fmt(e.kg, 2) : ''}" onchange="${on}.kg=num(this.value)"></label>` : ''}
     </div></div>`;
 }
+// Reps kan være et tal eller et interval som 8-12
+function setPlanReps(k, i, el){ const e = pDraft.days[k].ex[i], m = String(el.value).match(/(\d+)(?:\s*[-–]\s*(\d+))?/);
+  if(m){ e.reps = +m[1]; if(m[2] && +m[2] > +m[1]) e.rr = m[1] + '-' + m[2]; else delete e.rr } el.value = e.rr || e.reps }
 const planFor = id => ({id, sets:3, reps: exInfo(id).t === 's' ? 30 : 10});
 function addPlanEx(k){ pickExercise(id => { pDraft.days[k].ex.push(planFor(id)); closeModal(); render() }) }
 function addDay(){
@@ -231,14 +234,41 @@ function matchExercise(name){
   const n = normName(name), list = allExercises();
   if(EX_ALIAS[n] && EX[EX_ALIAS[n]]) return EX_ALIAS[n];
   const exact = list.find(x => normName(x.n) === n); if(exact) return exact.id;
-  const alias = Object.keys(EX_ALIAS).sort((a, b) => b.length - a.length).find(a => (' ' + n + ' ').includes(' ' + a + ' ') && a.split(' ').length >= n.split(' ').length - 1);   // "Bulgarian split squat" er ikke "Squat"
-  if(alias) return EX_ALIAS[alias];
-  const words = n.split(' ').filter(w => w.length > 2); let best = null, score = 0;
-  list.forEach(x => { const xw = normName(x.n).split(' '); const hit = words.filter(w => xw.some(v => v.startsWith(w) || w.startsWith(v))).length / Math.max(words.length, xw.length); if(hit > score){ score = hit; best = x.id } });
-  return score >= 0.5 ? best : null;
+  const plain = normName(name.replace(/\(.*?\)/g, ''));   // uden "(maskine)" osv. – men kun hvis der ikke stod noget i parentes
+  if(plain === n && EX_ALIAS[plain]) return EX_ALIAS[plain];
+  return null;
 }
 // "Bænkpres 4x8 60kg", "Squat 5 x 5 @ 100", "Pull-ups 3 sæt á 10" … Linjer uden tal er dagenes navne.
+const MUS_DA = {bryst:'Chest', skuldre:'Shoulders', sidedelte:'Shoulders', bagskuldre:'Shoulders', fordelte:'Shoulders', triceps:'Arms', biceps:'Arms', underarme:'Arms', arme:'Arms',
+  ryg:'Back', lats:'Back', quads:'Legs', baglår:'Legs', lægge:'Legs', læg:'Legs', ben:'Legs', mave:'Core', core:'Core', baller:'Glutes', balder:'Glutes', glutes:'Glutes',
+  chest:'Chest', shoulders:'Shoulders', back:'Back', legs:'Legs', hamstrings:'Legs', calves:'Legs', arms:'Arms', abs:'Core'};
+const restSec = s => { const m = String(s || '').match(/(\d+(?:[.,]\d+)?)\s*(?:-\s*\d+(?:[.,]\d+)?\s*)?(min|m|sek|sec|s)\b/i); if(!m) return null; const v = num(m[1]); return /^m/i.test(m[2]) ? Math.round(v * 60) : Math.round(v) };
+function parseTable(rows){
+  const p = {id:newId(), name:'', days:[]}, created = [];
+  rows.forEach(c => {
+    const si = c.findIndex((v, i) => i > 0 && /^\d+$/.test(v)); if(si < 1) return;        // overskriftsrække o.l.
+    const dayName = si >= 2 ? c[0] : '', exName = c[si - 1], rr = (c[si + 1] || '').replace(/\s/g, ''), rm = rr.match(/(\d+)(?:[-–](\d+))?/);
+    if(!exName || !rm) return;
+    let day = p.days.find(d => d.name === dayName); if(!day){ day = {id:newId(), name:dayName, ex:[]}; p.days.push(day) }
+    const rest = restSec(c.slice(si + 2).find(v => restSec(v)));
+    const musc = c.slice(si + 2).map(v => MUS_DA[normName(v)]).find(Boolean);
+    const id = exIdFor(exName, created, musc);
+    const e = {id, sets:Math.min(20, Math.max(1, +c[si])), reps:+rm[1]}; if(rm[2]) e.rr = rm[1] + '-' + rm[2]; if(rest) e.rest = rest;
+    day.ex.push(e);
+  });
+  p.days = p.days.filter(d => d.ex.length);
+  return {p, created};
+}
+// Findes øvelsen ikke, laves den (med muskelgruppen, hvis den står der)
+function exIdFor(name, created, musc){
+  const id = matchExercise(name); if(id) return id;
+  const c = S.customEx.find(x => normName(x.n) === normName(name)) || created.find(x => normName(x.n) === normName(name)); if(c) return c.id;
+  const x = {id:'c_' + newId(), n:name.charAt(0).toUpperCase() + name.slice(1), m:musc || 'Full body', t:'w'}; created.push(x); return x.id;
+}
 function parseProgram(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const cells = lines.map(l => (l.includes('\t') ? l.split('\t') : l.includes(';') ? l.split(';') : l.includes('|') ? l.split('|') : [l]).map(v => v.trim()).filter((v, i, a) => v || i < a.length - 1));
+  if(cells.filter(c => c.length >= 3).length >= Math.max(1, lines.length / 2)) return parseTable(cells);
   const p = {id:newId(), name:'', days:[]}, created = [];
   let day = null, headers = 0;
   text.split(/\r?\n/).forEach(raw => {
@@ -250,9 +280,7 @@ function parseProgram(text){
     const kgm = l.match(/(\d+(?:[.,]\d+)?)\s*kg/i) || l.match(/@\s*(\d+(?:[.,]\d+)?)/);
     const name = l.replace(sr[0], ' ').replace(kgm ? kgm[0] : '', ' ').replace(/\b(reps?|gentagelser|sek|sec|s)\b/gi, ' ').replace(/[,:;@–-]+\s*$/,'').replace(/\s+/g, ' ').trim().replace(/[,:;–-]+$/, '').trim();
     if(!name) return;
-    let id = matchExercise(name);
-    if(!id){ const c = S.customEx.find(x => normName(x.n) === normName(name)) || created.find(x => normName(x.n) === normName(name));
-      if(c) id = c.id; else { const x = {id:'c_' + newId(), n:name.charAt(0).toUpperCase() + name.slice(1), m:'Full body', t:'w'}; created.push(x); id = x.id } }
+    const id = exIdFor(name, created);
     if(!day){ day = {id:newId(), name:'', ex:[]}; p.days.push(day) }
     const e = {id, sets:Math.min(20, Math.max(1, +sr[1])), reps:Math.max(1, +sr[2])}; if(kgm) e.kg = num(kgm[1]);
     day.ex.push(e);
