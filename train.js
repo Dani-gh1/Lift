@@ -101,7 +101,7 @@ function startWorkout(routineId){   // routineId = id på en programdag
   if(S.current){ resumeWorkout(); return }
   const f = routineId ? findDay(routineId) : null, ex = f ? f.day.ex : [];   // en dag i et program (eller en skabelon)
   S.current = {id:newId(), start:Date.now(), end:null, name: f ? (f.day.title || dayName(f.p, f.k)) : defaultName(), notes:'', bw:null, routineId: f ? f.day.id : null,
-    ex: ex.filter(e => EX[e.id] || S.customEx.find(c => c.id === e.id)).map(e => ({id:e.id, target:e.reps || null, tsets:e.sets || null, tkg:e.kg || null, rr:e.rr || null, rest:e.rest || null, sets:newSets(e.id, e.sets)}))};
+    ex: ex.filter(e => EX[e.id] || S.customEx.find(c => c.id === e.id)).map(e => ({id:e.id, target:e.reps || null, tsets:e.sets || null, tkg:e.kg || null, rr:e.rr || null, rest:e.rest || null, tsl:e.sl || null, sets:newSets(e.id, e.sets)}))};
   wMode = 'active'; wEdit = null; kp.open = false;
   lsSave(); track('workout-start'); go('workout');
   if(!S.current.ex.length) setTimeout(() => pickExercise(addExercise), 150);
@@ -135,6 +135,7 @@ function prevFor(w, i, j){
   const e = w.ex[i], lp = lastPerformance(e.id, w.id, w.start);
   if(lp) return lp.sets[j] || lp.sets[lp.sets.length-1];
   for(let k = j - 1; k >= 0; k--){ const s = e.sets[k]; if(s.reps != null) return s }
+  const ps = e.tsl && e.tsl[j]; if(ps) return {kg:ps.kg ?? null, reps:ps.reps};   // programmets tal for netop dette sæt
   return e.target ? {kg:e.tkg ?? null, reps:e.target} : null;
 }
 const cleanSet = s => Object.assign({kg:s.kg || 0, reps:s.reps || 0, done:true}, s.note ? {note:s.note} : {});
@@ -159,7 +160,7 @@ function setRow(w, i, j){
 }
 function exCard(w, i){
   const e = w.ex[i], x = exInfo(e.id), fav = (S.profile.favs || []).includes(e.id), sug = wMode === 'active' ? suggestion(e.id, e.target) : '';
-  const plan = e.target && wMode === 'active' ? `${e.tsets || e.sets.length} × ${e.rr || e.target}${x.t === 's' ? ' ' + t('sec') : ''}${e.tkg ? ' · ' + fmt(e.tkg, 2) + ' kg' : ''}` : '';
+  const plan = e.target && wMode === 'active' ? `${e.tsets || e.sets.length} × ${e.rr || e.target}${x.t === 's' ? ' ' + t('sec') : ''}${e.tkg && !e.tsl ? ' · ' + fmt(e.tkg, 2) + ' kg' : ''}` : '';
   return `<section class="ex2">
     <div class="exhead"><button class="exname" onclick="showExercise('${e.id}')"><b>${esc(x.n)}</b>${plan ? `<span class="xs mut">${t('Plan')}: ${plan}</span>` : ''}${sug ? `<span class="xs neon">${esc(sug)}</span>` : ''}</button>
       <button class="iconbtn flat" onclick="exMenu(${i})" aria-label="${esc(t('Options for {n}', {n:x.n}))}">${ic('dots')}</button></div>

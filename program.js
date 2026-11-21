@@ -134,20 +134,29 @@ function dayEditHTML(d, k){
     <button class="link" style="margin-top:6px" onclick="addPlanEx(${k})">${ic('plus','sm')} ${t('Add exercise')}</button>
   </div>`;
 }
+// Hvert sæt for sig: Sæt 1: [reps] reps · [kg] kg
+const setList = e => Array.from({length:e.sets || 1}, (_, j) => (e.sl && e.sl[j]) || {reps:e.reps, rr:e.rr, kg:e.kg});
 function exPlanHTML(e, k, i){
-  const x = exInfo(e.id), on = `pDraft.days[${k}].ex[${i}]`;
+  const x = exInfo(e.id), sl = setList(e), w = x.t === 'w', unit = x.t === 's' ? t('sec') : t('reps');
   return `<div class="pex">
-    <div class="row between"><b class="ell">${esc(x.n)}</b><button class="iconbtn flat sm" onclick="exPlanMenu(${k},${i})" aria-label="${esc(t('Options for {n}', {n:x.n}))}">${ic('dots')}</button></div>
-    <div class="pexin">
-      <label><small>${t('Sets')}</small><input class="num" inputmode="numeric" value="${e.sets}" onchange="${on}.sets=Math.min(20,Math.max(1,parseInt(this.value)||1));this.value=${on}.sets"></label>
-      <span class="mut">×</span>
-      <label><small>${x.t === 's' ? t('Seconds') : t('Reps')}</small><input class="num" inputmode="text" value="${esc(e.rr || e.reps)}" onchange="setPlanReps(${k},${i},this)"></label>
-      ${x.t === 'w' ? `<label><small>${t('kg (optional)')}</small><input class="num" inputmode="decimal" placeholder="–" value="${e.kg != null ? fmt(e.kg, 2) : ''}" onchange="${on}.kg=num(this.value)"></label>` : ''}
-    </div></div>`;
+    <div class="row between" style="align-items:flex-start"><b>${esc(x.n)}</b><button class="iconbtn flat sm" onclick="exPlanMenu(${k},${i})" aria-label="${esc(t('Options for {n}', {n:x.n}))}">${ic('dots')}</button></div>
+    ${sl.map((st, j) => `<div class="psrow"><span class="psno">${t('Set {n}', {n:j + 1})}</span>
+      <input class="num" inputmode="text" value="${esc(st.rr || st.reps || '')}" placeholder="–" onchange="setPlanVal(${k},${i},${j},'reps',this)" aria-label="${esc(t('Set {n}', {n:j + 1}))} ${unit}"><small>${unit}</small>
+      ${w ? `<input class="num" inputmode="decimal" value="${st.kg != null ? fmt(st.kg, 2) : ''}" placeholder="–" onchange="setPlanVal(${k},${i},${j},'kg',this)" aria-label="${esc(t('Set {n}', {n:j + 1}))} kg"><small>kg</small>` : ''}
+      <button class="iconbtn flat sm" onclick="delPlanSet(${k},${i},${j})" aria-label="${t('Delete set')}" ${sl.length < 2 ? 'disabled' : ''}>${ic('x')}</button></div>`).join('')}
+    <button class="link" onclick="addPlanSet(${k},${i})">${ic('plus','sm')} ${t('Add set')}</button>
+  </div>`;
 }
+function syncSets(e, sl){ e.sl = sl; e.sets = sl.length; e.reps = sl[0].reps; if(sl[0].rr) e.rr = sl[0].rr; else delete e.rr; if(sl[0].kg != null) e.kg = sl[0].kg; else delete e.kg }
 // Reps kan være et tal eller et interval som 8-12
-function setPlanReps(k, i, el){ const e = pDraft.days[k].ex[i], m = String(el.value).match(/(\d+)(?:\s*[-–]\s*(\d+))?/);
-  if(m){ e.reps = +m[1]; if(m[2] && +m[2] > +m[1]) e.rr = m[1] + '-' + m[2]; else delete e.rr } el.value = e.rr || e.reps }
+function setPlanVal(k, i, j, f, el){
+  const e = pDraft.days[k].ex[i], sl = setList(e).map(o => Object.assign({}, o)), st = sl[j];
+  if(f === 'kg'){ const v = num(el.value); if(v == null) delete st.kg; else st.kg = v }
+  else { const m = String(el.value).match(/(\d+)(?:\s*[-–]\s*(\d+))?/); if(m){ st.reps = +m[1]; if(m[2] && +m[2] > +m[1]) st.rr = m[1] + '-' + m[2]; else delete st.rr } }
+  syncSets(e, sl); el.value = f === 'kg' ? (st.kg != null ? fmt(st.kg, 2) : '') : (st.rr || st.reps || '');   // ingen ny tegning, så fokus bliver i næste felt
+}
+function addPlanSet(k, i){ const e = pDraft.days[k].ex[i], sl = setList(e).map(o => Object.assign({}, o)); sl.push(Object.assign({}, sl[sl.length - 1])); syncSets(e, sl); render() }
+function delPlanSet(k, i, j){ const e = pDraft.days[k].ex[i], sl = setList(e).map(o => Object.assign({}, o)); if(sl.length < 2) return; sl.splice(j, 1); syncSets(e, sl); render() }
 const planFor = id => ({id, sets:3, reps: exInfo(id).t === 's' ? 30 : 10});
 function addPlanEx(k){ pickExercise(id => { pDraft.days[k].ex.push(planFor(id)); closeModal(); render() }) }
 function addDay(){
