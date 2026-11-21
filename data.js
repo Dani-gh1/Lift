@@ -43,8 +43,8 @@ const CONFIG = {
   stripePriceYear: '',    // fx 'price_1Q…' (349 kr./år)
   // false = BETALING vises kun i testtilstand (?app&test). Login og gem-på-konto virker for alle.
   paymentsLive: false,
-  // true = man SKAL oprette konto før appen kan bruges. false = login-skærmen har også "Continue without account".
-  requireAccount: false,
+  // true = man skal logge ind (e-mail + adgangskode) før appen kan bruges. false = login-skærmen har også "Continue without account".
+  requireAccount: true,
   // Varedata til stregkode-scanning og søgning (gratis, åben database)
   foodApi: 'https://world.openfoodfacts.org',
 };

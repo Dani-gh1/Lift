@@ -5,31 +5,12 @@
 SCREENS.splash = app => { app.innerHTML = `<div class="splash">${logoHTML(true)}</div>` };
 
 SCREENS.auth = app => {
-  const sent = acct.step === 'sent', confirm = acct.step === 'confirm';
   app.innerHTML = `<div class="wrap auth">
     <div class="authtop">${logoHTML(true)}</div>
-    ${sent ? `
-      <div class="bigicon">${ic('mail')}</div>
-      <h1>${t('Check your inbox')}</h1>
-      <p class="mut">${t('We sent a sign-in link to {e}.', {e:`<b class="txtc">${esc(acct.email)}</b>`})}</p>
-      <p class="mut">${t('Open the email <b class="txtc">on this phone</b> and tap the link – then you’re in.')}</p>
-      <button class="btn block" style="margin-top:14px" onclick="acct.step='email';render()">${t('Use another email or send again')}</button>
-      <p class="xs mut center">${t('No email after a minute? Check your spam folder.')}</p>`
-    : `
-      <h1>${confirm ? t('Almost there') : t('Create your account')}</h1>
-      <p class="mut">${confirm ? t('Confirm your email to finish signing in.') : t('Log every rep, see what you lifted last time and track what you eat. Your data is saved to your account – on every device.')}</p>
-      <form onsubmit="${confirm ? 'confirmEmail' : 'sendCode'}(event)">
-        <label class="small mut" for="acEmail">${t('Email')}</label>
-        <input id="acEmail" class="txt" type="email" autocomplete="email" required placeholder="${t('you@email.com')}" value="${esc(acct.email)}" style="margin:6px 0 12px">
-        <button class="btn pri block" ${acct.busy?'disabled':''}>${acct.busy ? (confirm ? t('Signing in…') : t('Sending…')) : (confirm ? t('Sign in') : t('Continue'))}</button>
-      </form>
-      ${confirm ? '' : `<p class="xs mut center">${t('No password needed – we email you a sign-in link.')}<br>${t('Already have an account? Same thing – just enter your email.')}</p>
-      ${testTools() || !CONFIG.requireAccount ? `<button class="link block" onclick="acct.skip=true;try{localStorage.setItem('lift_skip','1')}catch(_){};render()">${t('Continue without account')}</button>` : ''}`}`}
-    <div style="flex:1"></div>
-    <p class="xs mut center">${t('By continuing you accept our {l}.', {l:legalLinks()})}</p>
-    <p class="xs center" style="margin-top:8px"><button class="link xs" onclick="setLang('en')" style="padding:0 6px;min-height:32px;${LANG==='en'?'color:var(--txt)':''}">English</button>·<button class="link xs" onclick="setLang('da')" style="padding:0 6px;min-height:32px;${LANG==='da'?'color:var(--txt)':''}">Dansk</button></p>
+    ${acct.ready ? loginForm() : `<p class="small mut center">${t('Connecting…')}</p>`}
+    ${testTools() || !CONFIG.requireAccount ? `<button class="link block" onclick="acct.skip=true;try{localStorage.setItem('lift_skip','1')}catch(_){};render()">${t('Continue without account')}</button>` : ''}
   </div>`;
-  if(!sent) setTimeout(() => $('#acEmail')?.focus(), 60);
+  setTimeout(() => { if(!$('#acEmail')?.value) $('#acEmail')?.focus() }, 60);
 };
 
 const PERKS = [
@@ -217,7 +198,7 @@ function buyHTML(){
       <p class="xs mut center">${t('Then {p}. Cancel anytime before the trial ends and you pay nothing. Secure payment by Stripe.', {p: plan==='year' ? CONFIG.priceYear+' '+CONFIG.currency+' '+t('per year') : CONFIG.priceMonth+' '+CONFIG.currency+' '+t('per month')})}</p>
       <p class="xs mut center">${t('By starting the trial you accept our {l}.', {l:legalLinks()})}</p>
       <p class="xs mut center">${t('Signed in as {e}', {e:esc(acct.user.email)})}</p>`
-    : `<div class="card"><h3>${ic('user','sm')} ${t('Sign in to start')}</h3>${loginHTML(t('Sign in with your email to start your free trial. No password – we email you a link.'))}</div>`;
+    : `<div class="card"><h3>${ic('user','sm')} ${t('Sign in to start')}</h3>${loginHTML(t('Log in to start your free trial.'))}</div>`;
 }
 function waitlistHTML(){
   const w = S.profile.waitlist, interest = S.profile.interest;

@@ -287,6 +287,10 @@ input.num.sm{height:44px;width:58px;font-size:16px}
 .auth,.offer{min-height:100vh;display:flex;flex-direction:column;padding-top:calc(var(--top) + 28px);padding-bottom:calc(20px + var(--bot))}
 .auth h1,.offer h1{font-size:28px;margin:22px 0 8px}
 .auth form{margin-top:18px}
+.login{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.auth .login{margin-top:40px}
+.login .btn.pri{margin-top:4px}
+.login .link[hidden]{display:none}
 .authtop{margin-top:10px}
 .bigicon{width:64px;height:64px;border-radius:20px;background:var(--neonDim);color:var(--neon);display:flex;align-items:center;justify-content:center;margin-top:28px}
 .bigicon .ic{width:32px;height:32px}

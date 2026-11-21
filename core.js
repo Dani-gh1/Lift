@@ -237,7 +237,7 @@ const FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const authEnabled = () => !!(CONFIG.firebase && CONFIG.firebase.apiKey && CONFIG.firebase.projectId);
 const payEnabled = () => authEnabled() && !!(CONFIG.stripePriceMonth && CONFIG.stripePriceYear) && (CONFIG.paymentsLive || testTools());
 let fb = null;      // {app, auth, db, A: auth-modul, F: firestore-modul}
-const acct = {ready:false, user:null, sub:null, step:'email', email:'', busy:false, offline:false, skip:false};
+const acct = {ready:false, user:null, sub:null, email:'', wrongPw:false, busy:false, offline:false, skip:false};
 const rememberUser = id => { try{ id ? localStorage.setItem('lift_uid', id) : localStorage.removeItem('lift_uid') }catch(_){} };
 const rememberedUser = () => { try{ return localStorage.getItem('lift_uid') }catch(_){ return null } };
 let syncState = 'local', syncTimer = null, syncing = false, syncAgain = false;
@@ -251,11 +251,6 @@ async function initAccount(){
     const app = appM.initializeApp(CONFIG.firebase);
     fb = {app, auth:A.getAuth(app), db:F.getFirestore(app), A, F};
     if(CONFIG.firebaseEmulator){ A.connectAuthEmulator(fb.auth, 'http://127.0.0.1:9099', {disableWarnings:true}); F.connectFirestoreEmulator(fb.db, '127.0.0.1', 8080) }   // kun til test
-    // Kom brugeren tilbage via login-linket i mailen?
-    if(A.isSignInWithEmailLink(fb.auth, location.href)){
-      const email = (() => { try{ return localStorage.getItem('lift_signin_email') }catch(_){ return null } })();
-      if(email) await completeLink(email); else { acct.step = 'confirm'; }
-    }
     let first = true;
     A.onAuthStateChanged(fb.auth, async u => {
       const before = acct.user?.uid; acct.user = toUser(u); acct.ready = true;
@@ -271,48 +266,60 @@ async function initAccount(){
   }catch(e){ console.warn('Account unavailable', e); acct.ready = true; acct.offline = !!rememberedUser(); render() }
 }
 
-/* --- Login med e-mail-link --- */
-async function sendCode(e){       // (navnet bruges af skærmene)
+/* --- Login med e-mail og adgangskode --- */
+const authMsg = c => ({
+  'auth/invalid-email': t('Please enter a valid email'),
+  'auth/missing-password': t('Enter a password'),
+  'auth/weak-password': t('The password must be at least 6 characters'),
+  'auth/too-many-requests': t('Too many attempts. Try again in a moment.'),
+  'auth/network-request-failed': t('No connection. Try again.'),
+  'auth/operation-not-allowed': t('Sign-in with email and password is not switched on yet'),
+}[c] || t('Something went wrong. Please try again.'));
+// Én knap: findes kontoen, logges man ind – ellers oprettes den med det samme
+async function emailLogin(e){
   e && e.preventDefault();
-  const m = ($('#acEmail')?.value || '').trim();
+  const m = ($('#acEmail')?.value || '').trim(), pw = $('#acPass')?.value || '', btn = $('#acBtn');
+  if(!/^\S+@\S+\.\S+$/.test(m)) return toast(t('Please enter a valid email'));
+  if(!pw) return toast(t('Enter a password'));
+  if(!fb) return toast(t('Connecting… try again in a moment'));
+  acct.email = m; acct.wrongPw = false;
+  if(btn){ btn.disabled = true; btn.textContent = '…' }
+  const {A, auth} = fb;
+  try{ await A.signInWithEmailAndPassword(auth, m, pw); track('signed-in') }
+  catch(err){
+    const c = (err && err.code) || '';
+    if(['auth/invalid-credential','auth/invalid-login-credentials','auth/user-not-found','auth/wrong-password'].includes(c)){
+      try{ await A.createUserWithEmailAndPassword(auth, m, pw); track('account-created'); toast(t('Your account is created')) }
+      catch(err2){ const c2 = (err2 && err2.code) || ''; if(c2 === 'auth/email-already-in-use'){ acct.wrongPw = true; toast(t('Wrong password')) } else toast(authMsg(c2)) }
+    } else toast(authMsg(c));
+  }
+  if(btn && document.body.contains(btn)){ btn.disabled = false; btn.textContent = t('Log in') }
+  if(acct.wrongPw) $('#acReset')?.removeAttribute('hidden');
+}
+async function resetPassword(){
+  const m = ($('#acEmail')?.value || acct.email || '').trim();
   if(!/^\S+@\S+\.\S+$/.test(m)) return toast(t('Please enter a valid email'));
   if(!fb) return toast(t('Connecting… try again in a moment'));
-  acct.busy = true; render();
-  try{
-    await fb.A.sendSignInLinkToEmail(fb.auth, m, {url: appBase() + '?app&signin=1', handleCodeInApp: true});
-    try{ localStorage.setItem('lift_signin_email', m) }catch(_){}
-    acct.email = m; acct.step = 'sent'; track('signin-link-sent');
-  }catch(err){ console.warn(err); toast(err && err.code === 'auth/quota-exceeded' ? t('Too many sign-ins today. Try again later.') : t('Could not send the email. Check your address.')) }
-  acct.busy = false; render();
-}
-async function completeLink(email){
-  try{
-    await fb.A.signInWithEmailLink(fb.auth, email, location.href);
-    try{ localStorage.removeItem('lift_signin_email') }catch(_){}
-    acct.step = 'email'; track('signed-in'); toast(t('Welcome to LIFT!'));
-  }catch(err){
-    console.warn(err); acct.step = 'email';
-    toast(err && /expired|invalid-action/.test(err.code || '') ? t('That link has expired. Send a new one.') : t('Could not sign you in. Try again.'));
-  }
-  window.history.replaceState(null, '', location.pathname + '?app');
-}
-async function confirmEmail(e){     // linket blev åbnet på en anden enhed/browser
-  e && e.preventDefault();
-  const m = ($('#acEmail')?.value || '').trim(); if(!/^\S+@\S+\.\S+$/.test(m)) return toast(t('Please enter a valid email'));
-  acct.busy = true; render(); await completeLink(m); acct.busy = false; render();
+  try{ await fb.A.sendPasswordResetEmail(fb.auth, m, {url: appBase() + '?app'}); toast(t('We sent you an email to choose a new password.')) }
+  catch(err){ toast(authMsg(err && err.code)) }
 }
 async function signOut(){
   if(fb) await fb.A.signOut(fb.auth);
   acct.user = null; acct.sub = null; syncState = 'local'; rememberUser(null); applyEntitlement(); go('train'); toast(t('Signed out'));
 }
+// Login-formularen: kun e-mail og adgangskode
+function loginForm(){
+  return `<form class="login" onsubmit="emailLogin(event)" novalidate>
+    <input id="acEmail" class="txt" type="email" autocomplete="email" inputmode="email" placeholder="${t('Email')}" aria-label="${t('Email')}" value="${esc(acct.email)}">
+    <input id="acPass" class="txt" type="password" autocomplete="current-password" placeholder="${t('Password')}" aria-label="${t('Password')}">
+    <button id="acBtn" class="btn pri block">${t('Log in')}</button>
+    <button type="button" id="acReset" class="link block" onclick="resetPassword()" ${acct.wrongPw ? '' : 'hidden'}>${t('Forgot your password?')}</button>
+  </form>`;
+}
 function loginHTML(intro){
   if(!authEnabled()) return '';
   if(!acct.ready) return `<p class="small mut">${t('Connecting…')}</p>`;
-  if(acct.step === 'sent') return `<p class="small">${t('We sent a sign-in link to {e}.', {e:`<b>${esc(acct.email)}</b>`})}</p><p class="small mut">${t('Open the email on this phone and tap the link. Check spam if you can’t find it.')}</p>
-    <button type="button" class="link" onclick="acct.step='email';render()">${t('Use another email or resend')}</button>`;
-  return `<form onsubmit="${acct.step === 'confirm' ? 'confirmEmail' : 'sendCode'}(event)"><p class="small mut">${acct.step === 'confirm' ? t('Confirm your email to finish signing in.') : (intro || t('Sign in with your email. No password – we email you a sign-in link.'))}</p>
-    <div class="row"><input id="acEmail" class="txt grow" type="email" autocomplete="email" required placeholder="${t('you@email.com')}" aria-label="${t('Your email')}" value="${esc(acct.email)}">
-    <button class="btn sm pri" style="min-height:52px" ${acct.busy?'disabled':''}>${acct.busy?'…':acct.step === 'confirm' ? t('Sign in') : t('Send')}</button></div></form>`;
+  return (intro ? `<p class="small mut">${intro}</p>` : '') + loginForm();
 }
 
 /* --- Synkronisering med Firestore --- */
