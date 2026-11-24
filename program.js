@@ -157,7 +157,7 @@ function setPlanVal(k, i, j, f, el){
 }
 function addPlanSet(k, i){ const e = pDraft.days[k].ex[i], sl = setList(e).map(o => Object.assign({}, o)); sl.push(Object.assign({}, sl[sl.length - 1])); syncSets(e, sl); render() }
 function delPlanSet(k, i, j){ const e = pDraft.days[k].ex[i], sl = setList(e).map(o => Object.assign({}, o)); if(sl.length < 2) return; sl.splice(j, 1); syncSets(e, sl); render() }
-const planFor = id => ({id, sets:3, reps: exInfo(id).t === 's' ? 30 : 10});
+const planFor = id => ({id, sets:2, reps: exInfo(id).t === 's' ? 30 : 10});
 function addPlanEx(k){ pickExercise(id => { pDraft.days[k].ex.push(planFor(id)); closeModal(); render() }) }
 function addDay(){
   pDraft.days.push({id:newId(), name:'', ex:[]}); render();
@@ -248,9 +248,9 @@ function matchExercise(name){
   return null;
 }
 // "Bænkpres 4x8 60kg", "Squat 5 x 5 @ 100", "Pull-ups 3 sæt á 10" … Linjer uden tal er dagenes navne.
-const MUS_DA = {bryst:'Chest', skuldre:'Shoulders', sidedelte:'Shoulders', bagskuldre:'Shoulders', fordelte:'Shoulders', triceps:'Arms', biceps:'Arms', underarme:'Arms', arme:'Arms',
+const MUS_DA = {bryst:'Chest', skuldre:'Shoulders', sidedelte:'Shoulders', bagskuldre:'Shoulders', fordelte:'Shoulders', triceps:'Triceps', biceps:'Biceps', underarme:'Forearms', forearms:'Forearms', arme:'Biceps',
   ryg:'Back', lats:'Back', quads:'Legs', baglår:'Legs', lægge:'Legs', læg:'Legs', ben:'Legs', mave:'Core', core:'Core', baller:'Glutes', balder:'Glutes', glutes:'Glutes',
-  chest:'Chest', shoulders:'Shoulders', back:'Back', legs:'Legs', hamstrings:'Legs', calves:'Legs', arms:'Arms', abs:'Core'};
+  chest:'Chest', shoulders:'Shoulders', back:'Back', legs:'Legs', hamstrings:'Legs', calves:'Legs', arms:'Biceps', abs:'Core'};
 const restSec = s => { const m = String(s || '').match(/(\d+(?:[.,]\d+)?)\s*(?:-\s*\d+(?:[.,]\d+)?\s*)?(min|m|sek|sec|s)\b/i); if(!m) return null; const v = num(m[1]); return /^m/i.test(m[2]) ? Math.round(v * 60) : Math.round(v) };
 function parseTable(rows){
   const p = {id:newId(), name:'', days:[]}, created = [];

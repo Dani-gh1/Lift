@@ -82,6 +82,7 @@ function load(){
     const raw = localStorage.getItem(KEY);
     if(raw){ const d = JSON.parse(raw); S = Object.assign(blank(), d); S.profile = Object.assign(blankProfile(), d.profile||{}); COLLS.forEach(k => { if(!Array.isArray(S[k])) S[k] = [] });
       if(!Array.isArray(S.profile.favs)) S.profile.favs = [];
+      S.customEx.forEach(x => { if(x.m === 'Arms') x.m = /tri|pushdown|extension|dips/i.test(x.n) ? 'Triceps' : /hånd|wrist|forearm|underarm/i.test(x.n) ? 'Forearms' : 'Biceps' });
       if(!S.dirty || typeof S.dirty !== 'object') S.dirty = {}; if(!S.sync || typeof S.sync !== 'object') S.sync = {uid:null, pulled:0, profPushed:0}; if(!S.del) S.del = {}; return }
     const old = localStorage.getItem('lift_v2') || localStorage.getItem('lift_v1');
     if(old) migrateV2(JSON.parse(old));

@@ -520,7 +520,7 @@ addDA({
   'Oats with milk':'Havregryn med mælk', 'Chicken & rice':'Kylling og ris', 'Skyr':'Skyr', 'Salmon & potatoes':'Laks og kartofler',
 });
 
-Object.assign(DA_MUS, {Chest:'Bryst', Back:'Ryg', Legs:'Ben', Glutes:'Baller', Shoulders:'Skuldre', Arms:'Arme', Core:'Core', 'Full body':'Hele kroppen'});
+Object.assign(DA_MUS, {Chest:'Bryst', Back:'Ryg', Legs:'Ben', Glutes:'Baller', Shoulders:'Skuldre', Biceps:'Biceps', Triceps:'Triceps', Forearms:'Underarme', Core:'Core', 'Full body':'Hele kroppen'});
 
 // Tekniktrin på dansk (øvelsernes navne forbliver engelske, som man siger i fitnesscentret)
 Object.assign(DA_CUES, {

@@ -96,7 +96,7 @@ function renderCal(sel){
 let lastPop = null, wMode = 'active', wEdit = null, wDirty = false, wBack = 'train';
 const cw = () => wMode === 'edit' ? wEdit : S.current;          // den træning, der vises lige nu
 function persistW(){ if(wMode === 'edit') wDirty = true; else lsSave() }
-const newSets = (id, n) => Array.from({length: n || (lastPerformance(id)?.sets.length) || 3}, () => ({kg:null, reps:null, done:false}));
+const newSets = (id, n) => Array.from({length: n || (lastPerformance(id)?.sets.length) || 2}, () => ({kg:null, reps:null, done:false}));
 function startWorkout(routineId){   // routineId = id på en programdag
   if(S.current){ resumeWorkout(); return }
   const f = routineId ? findDay(routineId) : null, ex = f ? f.day.ex : [];   // en dag i et program (eller en skabelon)

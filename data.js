@@ -6,7 +6,7 @@
    ØVELSE (i EX):
      nøgle: {
        n:   'Navn der vises'
-       m:   muskelgruppe: 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Arms' | 'Core' | 'Full body'
+       m:   muskelgruppe: 'Chest' | 'Back' | 'Legs' | 'Glutes' | 'Shoulders' | 'Biceps' | 'Triceps' | 'Forearms' | 'Core' | 'Full body'
        t:   'w' = vægt + reps | 'bw' = kun reps (kropsvægt) | 's' = tid i sekunder
        inc: (valgfri) hvor meget vægten øges, når man klarer alle sæt (standard 2.5)
        needs: (valgfri) udstyr – bruges til animationen: ['stang'] | ['haandvaegte'] | ['kettlebell'] | ['elastik'] | ['maskiner']
@@ -49,7 +49,7 @@ const CONFIG = {
   foodApi: 'https://world.openfoodfacts.org',
 };
 
-const MUSCLES = ['Chest','Back','Legs','Glutes','Shoulders','Arms','Core','Full body'];
+const MUSCLES = ['Chest','Back','Legs','Glutes','Shoulders','Biceps','Triceps','Forearms','Core','Full body'];
 
 const EX = {
   // Bryst
@@ -92,11 +92,11 @@ const EX = {
   lat_raise:{n:'Lateral raise',m:'Shoulders',t:'w',inc:1,needs:['haandvaegte'],cue:['Slight bend in your elbows','Raise to shoulder height','Lower slowly']},
   pike_pushup:{n:'Pike push-up',m:'Shoulders',t:'bw',a:'pike',cue:['Hips high like an upside-down V','Lower your head to the floor','Push back up']},
   // Arme
-  db_curl:{n:'Dumbbell curl',m:'Arms',t:'w',inc:1,needs:['haandvaegte'],cue:['Elbows close to your body','Curl up without swinging','Lower slowly']},
-  bb_curl:{n:'Barbell curl',m:'Arms',t:'w',needs:['stang'],cue:['Elbows still','Curl the bar up','Lower with control']},
-  hammer_curl:{n:'Hammer curl',m:'Arms',t:'w',inc:1,needs:['haandvaegte'],cue:['Palms facing each other','Curl up','Lower slowly']},
-  triceps_push:{n:'Triceps pushdown',m:'Arms',t:'w',needs:['maskiner'],cue:['Elbows tight to your sides','Push down until arms are straight','Return slowly']},
-  skull_crusher:{n:'Skull crusher',m:'Arms',t:'w',needs:['stang'],cue:['Lie on a bench, arms up','Bend elbows to lower bar to forehead','Straighten your arms']},
+  db_curl:{n:'Dumbbell curl',m:'Biceps',t:'w',inc:1,needs:['haandvaegte'],cue:['Elbows close to your body','Curl up without swinging','Lower slowly']},
+  bb_curl:{n:'Barbell curl',m:'Biceps',t:'w',needs:['stang'],cue:['Elbows still','Curl the bar up','Lower with control']},
+  hammer_curl:{n:'Hammer curl',m:'Biceps',t:'w',inc:1,needs:['haandvaegte'],cue:['Palms facing each other','Curl up','Lower slowly']},
+  triceps_push:{n:'Triceps pushdown',m:'Triceps',t:'w',needs:['maskiner'],cue:['Elbows tight to your sides','Push down until arms are straight','Return slowly']},
+  skull_crusher:{n:'Skull crusher',m:'Triceps',t:'w',needs:['stang'],cue:['Lie on a bench, arms up','Bend elbows to lower bar to forehead','Straighten your arms']},
   // Core
   plank:{n:'Plank',m:'Core',t:'s',inc:5,a:'plank',cue:['Elbows under shoulders','Brace abs and glutes','Body straight, breathe calmly']},
   crunch:{n:'Crunch',m:'Core',t:'bw',cue:['Lie on your back, knees bent','Curl your shoulders off the floor','Lower slowly']},
